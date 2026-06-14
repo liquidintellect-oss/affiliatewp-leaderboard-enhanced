@@ -1,0 +1,25 @@
+/* AffiliateWP Leaderboard Enhanced — front-end styles */
+
+.affwp-leaderboard-week-wrap {
+    margin: 0 0 1em;
+}
+
+.affwp-leaderboard-week-label {
+    font-size: 85%;
+    color: #666;
+    font-style: italic;
+    margin-bottom: 0.4em;
+}
+
+/* Inherits list styling from the base .affwp-leaderboard class output by the
+   original leaderboard addon, but scoped so we can add specificity if needed. */
+.affwp-leaderboard.affwp-leaderboard-week p {
+    font-size: 80%;
+    color: #999;
+}
+
+.affwp-leaderboard-week-empty {
+    font-size: 85%;
+    color: #999;
+    font-style: italic;
+}
