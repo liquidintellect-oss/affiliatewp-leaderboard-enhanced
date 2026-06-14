@@ -131,7 +131,7 @@ class LeaderboardShortcodeTest extends TestCase {
 
 		$this->assertStringContainsString( 'affwp-leaderboard-enhanced', $html );
 		$this->assertStringContainsString( '<ol', $html );
-		$this->assertStringContainsString( '<li>', $html );
+		$this->assertStringContainsString( '<li', $html );
 	}
 
 	/** @test */
@@ -209,6 +209,96 @@ class LeaderboardShortcodeTest extends TestCase {
 	/** @test */
 	public function anonymize_name_handles_extra_internal_whitespace(): void {
 		$this->assertSame( 'John D.', LeaderboardShortcode::anonymizeName( 'John  Doe' ) );
+	}
+
+	// ── buildHtml: position classes ──────────────────────────────────────────
+
+	/** @test */
+	public function build_html_adds_position_1_class_to_first_entry(): void {
+		$entries   = array(
+			$this->makeEntry( id: 1, name: 'Alice', earnings: 300.0, count: 5 ),
+			$this->makeEntry( id: 2, name: 'Bob', earnings: 200.0, count: 3 ),
+			$this->makeEntry( id: 3, name: 'Carol', earnings: 100.0, count: 1 ),
+		);
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
+
+		$html = $shortcode->buildHtml( $entries, $this->range, false, false, false );
+
+		$this->assertStringContainsString( 'class="affwp-leaderboard-position-1"', $html );
+	}
+
+	/** @test */
+	public function build_html_adds_position_2_class_to_second_entry(): void {
+		$entries   = array(
+			$this->makeEntry( id: 1, name: 'Alice', earnings: 300.0, count: 5 ),
+			$this->makeEntry( id: 2, name: 'Bob', earnings: 200.0, count: 3 ),
+			$this->makeEntry( id: 3, name: 'Carol', earnings: 100.0, count: 1 ),
+		);
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
+
+		$html = $shortcode->buildHtml( $entries, $this->range, false, false, false );
+
+		$this->assertStringContainsString( 'class="affwp-leaderboard-position-2"', $html );
+	}
+
+	/** @test */
+	public function build_html_adds_position_3_class_to_third_entry(): void {
+		$entries   = array(
+			$this->makeEntry( id: 1, name: 'Alice', earnings: 300.0, count: 5 ),
+			$this->makeEntry( id: 2, name: 'Bob', earnings: 200.0, count: 3 ),
+			$this->makeEntry( id: 3, name: 'Carol', earnings: 100.0, count: 1 ),
+		);
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
+
+		$html = $shortcode->buildHtml( $entries, $this->range, false, false, false );
+
+		$this->assertStringContainsString( 'class="affwp-leaderboard-position-3"', $html );
+	}
+
+	/** @test */
+	public function build_html_does_not_add_position_class_to_fourth_entry_and_beyond(): void {
+		$entries   = array(
+			$this->makeEntry( id: 1, name: 'Alice', earnings: 400.0, count: 8 ),
+			$this->makeEntry( id: 2, name: 'Bob', earnings: 300.0, count: 6 ),
+			$this->makeEntry( id: 3, name: 'Carol', earnings: 200.0, count: 4 ),
+			$this->makeEntry( id: 4, name: 'Dave', earnings: 100.0, count: 2 ),
+		);
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
+
+		$html = $shortcode->buildHtml( $entries, $this->range, false, false, false );
+
+		$this->assertStringNotContainsString( 'affwp-leaderboard-position-4', $html );
+	}
+
+	/** @test */
+	public function build_html_position_classes_appear_in_correct_order(): void {
+		$entries   = array(
+			$this->makeEntry( id: 1, name: 'Alice', earnings: 300.0, count: 5 ),
+			$this->makeEntry( id: 2, name: 'Bob', earnings: 200.0, count: 3 ),
+			$this->makeEntry( id: 3, name: 'Carol', earnings: 100.0, count: 1 ),
+		);
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
+
+		$html = $shortcode->buildHtml( $entries, $this->range, false, false, false );
+
+		$pos1 = strpos( $html, 'affwp-leaderboard-position-1' );
+		$pos2 = strpos( $html, 'affwp-leaderboard-position-2' );
+		$pos3 = strpos( $html, 'affwp-leaderboard-position-3' );
+
+		$this->assertLessThan( $pos2, $pos1, 'Position 1 should appear before position 2' );
+		$this->assertLessThan( $pos3, $pos2, 'Position 2 should appear before position 3' );
+	}
+
+	/** @test */
+	public function build_html_adds_only_position_1_class_when_single_entry(): void {
+		$entries   = array( $this->makeEntry( id: 1, name: 'Alice', earnings: 100.0, count: 1 ) );
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
+
+		$html = $shortcode->buildHtml( $entries, $this->range, false, false, false );
+
+		$this->assertStringContainsString( 'affwp-leaderboard-position-1', $html );
+		$this->assertStringNotContainsString( 'affwp-leaderboard-position-2', $html );
+		$this->assertStringNotContainsString( 'affwp-leaderboard-position-3', $html );
 	}
 
 	// ── render: attribute flag parsing ───────────────────────────────────────

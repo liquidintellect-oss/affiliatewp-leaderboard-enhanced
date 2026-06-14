@@ -119,19 +119,15 @@ If today **is** the chosen start day, the week begins today. The window advances
 <div class="affwp-leaderboard-enhanced-wrap">
   <p class="affwp-leaderboard-enhanced-label">Jun 10–16, 2026</p>
   <ol class="affwp-leaderboard affwp-leaderboard-enhanced">
-    <li>
-      Jane Smith
-      <p>$420.00 earnings &nbsp;|&nbsp; 7 referrals</p>
-    </li>
-    <li>
-      Bob Jones
-      <p>$310.50 earnings &nbsp;|&nbsp; 5 referrals</p>
-    </li>
+    <li class="affwp-leaderboard-position-1"><span class="affwp-leaderboard-name">Jane Smith</span><span class="affwp-leaderboard-stats">$420.00 earnings &nbsp;|&nbsp; 7 referrals</span></li>
+    <li class="affwp-leaderboard-position-2"><span class="affwp-leaderboard-name">Bob Jones</span><span class="affwp-leaderboard-stats">$310.50 earnings &nbsp;|&nbsp; 5 referrals</span></li>
+    <li class="affwp-leaderboard-position-3"><span class="affwp-leaderboard-name">Carol Lee</span><span class="affwp-leaderboard-stats">$198.00 earnings &nbsp;|&nbsp; 3 referrals</span></li>
+    <li><span class="affwp-leaderboard-name">Dave Kim</span><span class="affwp-leaderboard-stats">$95.00 earnings &nbsp;|&nbsp; 1 referral</span></li>
   </ol>
 </div>
 ```
 
-The label for a year period displays as the four-digit year: `<p class="affwp-leaderboard-enhanced-label">2026</p>`
+The top 3 list items always receive a position class (`affwp-leaderboard-position-1`, `-2`, `-3`). Entries in 4th place and beyond receive no position class. The label for a year period displays as the four-digit year: `<p class="affwp-leaderboard-enhanced-label">2026</p>`
 
 When no affiliate activity exists in the selected period:
 
@@ -176,11 +172,44 @@ The plugin enqueues `assets/css/leaderboard-enhanced.css` on all front-end pages
 | `.affwp-leaderboard-enhanced-label` | Period label `<p>` |
 | `.affwp-leaderboard` | The `<ol>` list (shared with original addon) |
 | `.affwp-leaderboard-enhanced` | Additional class on the `<ol>` for specificity |
+| `.affwp-leaderboard-position-1` | 1st place `<li>` |
+| `.affwp-leaderboard-position-2` | 2nd place `<li>` |
+| `.affwp-leaderboard-position-3` | 3rd place `<li>` |
 | `.affwp-leaderboard-enhanced-empty` | "No activity" message `<p>` |
 
 If the original `affiliatewp-leaderboard` addon is also active, its `.affwp-leaderboard p` styles apply here too since the `<ol>` carries the same base class.
 
-**To override styles**, add rules to your theme's stylesheet:
+### Position badges
+
+The top 3 list items each receive a unique class so you can add gold/silver/bronze styling, icons, or badges without touching any PHP. The plugin ships with minimal defaults (font-weight only). Override them in your theme:
+
+```css
+/* Gold / Silver / Bronze background example */
+.affwp-leaderboard-enhanced .affwp-leaderboard-position-1 {
+    background-color: #fff8dc;   /* gold tint */
+    padding: 0.3em 0.5em;
+    border-radius: 4px;
+}
+
+.affwp-leaderboard-enhanced .affwp-leaderboard-position-2 {
+    background-color: #f5f5f5;   /* silver tint */
+    padding: 0.3em 0.5em;
+    border-radius: 4px;
+}
+
+.affwp-leaderboard-enhanced .affwp-leaderboard-position-3 {
+    background-color: #fdf0e0;   /* bronze tint */
+    padding: 0.3em 0.5em;
+    border-radius: 4px;
+}
+
+/* Emoji badge prepended via ::before */
+.affwp-leaderboard-enhanced .affwp-leaderboard-position-1 .affwp-leaderboard-name::before { content: "🥇 "; }
+.affwp-leaderboard-enhanced .affwp-leaderboard-position-2 .affwp-leaderboard-name::before { content: "🥈 "; }
+.affwp-leaderboard-enhanced .affwp-leaderboard-position-3 .affwp-leaderboard-name::before { content: "🥉 "; }
+```
+
+**To override other styles**, add rules to your theme's stylesheet:
 
 ```css
 .affwp-leaderboard-enhanced li {
