@@ -273,6 +273,64 @@ class LeaderboardWidgetTest extends TestCase {
 	}
 
 	/** @test */
+	public function update_sets_anonymize_to_no_when_checkbox_not_submitted(): void {
+		WP_Mock::userFunction( 'sanitize_text_field' )->andReturn( '' );
+
+		$shortcode = Mockery::mock( LeaderboardShortcode::class );
+		$widget    = new LeaderboardWidget( $shortcode );
+
+		$result = $widget->update(
+			array( 'title' => '', 'period' => 'week', 'week_start' => 'monday', 'number' => '5', 'orderby' => 'earnings', 'status' => 'paid' ),
+			array()
+		);
+
+		$this->assertSame( 'no', $result['anonymize'] );
+	}
+
+	/** @test */
+	public function update_sets_anonymize_to_yes_when_checkbox_submitted(): void {
+		WP_Mock::userFunction( 'sanitize_text_field' )->andReturn( '' );
+
+		$shortcode = Mockery::mock( LeaderboardShortcode::class );
+		$widget    = new LeaderboardWidget( $shortcode );
+
+		$result = $widget->update(
+			array( 'title' => '', 'period' => 'week', 'week_start' => 'monday', 'number' => '5', 'orderby' => 'earnings', 'status' => 'paid', 'anonymize' => 'yes' ),
+			array()
+		);
+
+		$this->assertSame( 'yes', $result['anonymize'] );
+	}
+
+	/** @test */
+	public function widget_passes_anonymize_setting_to_shortcode(): void {
+		WP_Mock::userFunction( 'apply_filters' )->andReturn( '' );
+
+		$shortcode = Mockery::mock( LeaderboardShortcode::class );
+		$shortcode->shouldReceive( 'render' )
+			->once()
+			->with(
+				Mockery::on(
+					function ( array $atts ): bool {
+						return 'yes' === $atts['anonymize'];
+					}
+				)
+			)
+			->andReturn( '' );
+
+		$widget = new LeaderboardWidget( $shortcode );
+
+		ob_start();
+		$widget->widget(
+			array( 'before_widget' => '', 'after_widget' => '', 'before_title' => '', 'after_title' => '', 'id' => 'w' ),
+			array( 'anonymize' => 'yes' )
+		);
+		ob_end_clean();
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/** @test */
 	public function update_rejects_invalid_orderby_and_defaults_to_earnings(): void {
 		WP_Mock::userFunction( 'sanitize_text_field' )->andReturn( '' );
 

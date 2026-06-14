@@ -34,6 +34,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * referrals   string  Show referral count column: 'yes' (default) or 'no'.
  * status      string  Comma-separated referral statuses. Default 'paid,unpaid'.
  * show_label  string  Show the period label above the list: 'yes' (default) or 'no'.
+ * anonymize   string  Abbreviate affiliate last names: 'no' (default) or 'yes'.
+ *                     e.g. "John Doe" becomes "John D.". Single-word names are unchanged.
  */
 class LeaderboardShortcode {
 
@@ -74,6 +76,7 @@ class LeaderboardShortcode {
 				'referrals'  => 'yes',
 				'status'     => 'paid,unpaid',
 				'show_label' => 'yes',
+				'anonymize'  => 'no',
 			),
 			$atts,
 			'affiliate_leaderboard_enhanced'
@@ -102,10 +105,11 @@ class LeaderboardShortcode {
 		$show_earnings  = ! in_array( strtolower( trim( (string) $atts['earnings'] ) ), self::NO_VALUES, true );
 		$show_referrals = ! in_array( strtolower( trim( (string) $atts['referrals'] ) ), self::NO_VALUES, true );
 		$show_label     = ! in_array( strtolower( trim( (string) $atts['show_label'] ) ), self::NO_VALUES, true );
+		$anonymize      = ! in_array( strtolower( trim( (string) $atts['anonymize'] ) ), self::NO_VALUES, true );
 
 		$entries = $this->leaderboard->build( $range, $statuses, $number, $orderby, $order );
 
-		return $this->buildHtml( $entries, $range, $show_earnings, $show_referrals, $show_label );
+		return $this->buildHtml( $entries, $range, $show_earnings, $show_referrals, $show_label, $anonymize );
 	}
 
 	/**
@@ -125,6 +129,7 @@ class LeaderboardShortcode {
 	 * @param bool                        $show_earnings  Whether to show the earnings column.
 	 * @param bool                        $show_referrals Whether to show the referral count column.
 	 * @param bool                        $show_label     Whether to show the period label.
+	 * @param bool                        $anonymize      Whether to abbreviate affiliate last names.
 	 * @return string HTML.
 	 */
 	public function buildHtml(
@@ -132,7 +137,8 @@ class LeaderboardShortcode {
 		DatePeriod $range,
 		bool $show_earnings,
 		bool $show_referrals,
-		bool $show_label
+		bool $show_label,
+		bool $anonymize = false
 	): string {
 		$sep  = '&nbsp;&nbsp;<span class="divider">|</span>&nbsp;&nbsp;';
 		$html = '<div class="affwp-leaderboard-enhanced-wrap">' . "\n";
@@ -168,8 +174,12 @@ class LeaderboardShortcode {
 				// $name_span:  affiliate_name escaped by esc_html().
 				// $stats_span: currency escaped by wp_kses_post(); count by absint();
 				// labels escaped by esc_html__().
+				$display_name = $anonymize
+					? self::anonymizeName( $entry->affiliate_name )
+					: $entry->affiliate_name;
+
 				$name_span = '<span class="affwp-leaderboard-name">'
-					. esc_html( $entry->affiliate_name )
+					. esc_html( $display_name )
 					. '</span>';
 
 				$stats_span = '';
@@ -193,5 +203,33 @@ class LeaderboardShortcode {
 		$html .= '</div>';
 
 		return $html;
+	}
+
+	/**
+	 * Abbreviate the last word of a name to its first letter followed by a period.
+	 *
+	 * Only applies when the name contains more than one word.  Single-word names
+	 * (e.g. usernames or mononyms) are returned unchanged.
+	 *
+	 * Examples:
+	 *   "John Doe"       → "John D."
+	 *   "Mary Jane Watson" → "Mary Jane W."
+	 *   "Alice"          → "Alice"
+	 *
+	 * @param string $name The affiliate's display name.
+	 * @return string The anonymized name.
+	 */
+	public static function anonymizeName( string $name ): string {
+		$parts = preg_split( '/\s+/', trim( $name ) );
+
+		if ( false === $parts || count( $parts ) < 2 ) {
+			return $name;
+		}
+
+		$last       = array_pop( $parts );
+		$first_char = mb_substr( $last, 0, 1 );
+		$parts[]    = $first_char . '.';
+
+		return implode( ' ', $parts );
 	}
 }

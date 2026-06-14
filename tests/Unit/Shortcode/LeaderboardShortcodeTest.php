@@ -156,6 +156,61 @@ class LeaderboardShortcodeTest extends TestCase {
 		$this->assertStringNotContainsString( '<p>', $html );
 	}
 
+	// ── buildHtml: anonymize ──────────────────────────────────────────────────
+
+	/** @test */
+	public function build_html_shows_full_name_when_anonymize_is_false(): void {
+		$entries   = array( $this->makeEntry( id: 1, name: 'John Doe', earnings: 100.0, count: 1 ) );
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
+
+		$html = $shortcode->buildHtml( $entries, $this->range, false, false, false, false );
+
+		$this->assertStringContainsString( 'John Doe', $html );
+	}
+
+	/** @test */
+	public function build_html_abbreviates_last_name_when_anonymize_is_true(): void {
+		$entries   = array( $this->makeEntry( id: 1, name: 'John Doe', earnings: 100.0, count: 1 ) );
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
+
+		$html = $shortcode->buildHtml( $entries, $this->range, false, false, false, true );
+
+		$this->assertStringContainsString( 'John D.', $html );
+		$this->assertStringNotContainsString( 'John Doe', $html );
+	}
+
+	/** @test */
+	public function build_html_leaves_single_word_name_unchanged_when_anonymize_is_true(): void {
+		$entries   = array( $this->makeEntry( id: 1, name: 'Alice', earnings: 50.0, count: 1 ) );
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
+
+		$html = $shortcode->buildHtml( $entries, $this->range, false, false, false, true );
+
+		$this->assertStringContainsString( 'Alice', $html );
+	}
+
+	// ── anonymizeName ─────────────────────────────────────────────────────────
+
+	/** @test */
+	public function anonymize_name_abbreviates_last_name(): void {
+		$this->assertSame( 'John D.', LeaderboardShortcode::anonymizeName( 'John Doe' ) );
+	}
+
+	/** @test */
+	public function anonymize_name_abbreviates_last_word_only_for_multi_word_names(): void {
+		$this->assertSame( 'Mary Jane W.', LeaderboardShortcode::anonymizeName( 'Mary Jane Watson' ) );
+	}
+
+	/** @test */
+	public function anonymize_name_leaves_single_word_name_unchanged(): void {
+		$this->assertSame( 'Alice', LeaderboardShortcode::anonymizeName( 'Alice' ) );
+	}
+
+	/** @test */
+	public function anonymize_name_handles_extra_internal_whitespace(): void {
+		$this->assertSame( 'John D.', LeaderboardShortcode::anonymizeName( 'John  Doe' ) );
+	}
+
 	// ── render: attribute flag parsing ───────────────────────────────────────
 	//
 	// These tests verify that render() correctly converts shortcode attribute
@@ -217,6 +272,7 @@ class LeaderboardShortcodeTest extends TestCase {
 			'referrals'  => 'yes',
 			'status'     => 'paid,unpaid',
 			'show_label' => 'no',
+			'anonymize'  => 'no',
 		);
 
 		WP_Mock::userFunction( 'shortcode_atts' )

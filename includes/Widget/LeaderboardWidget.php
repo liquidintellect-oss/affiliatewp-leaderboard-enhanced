@@ -67,6 +67,7 @@ class LeaderboardWidget extends \WP_Widget {
 				'referrals'  => $instance['referrals'] ?? 'yes',
 				'status'     => $instance['status'] ?? 'paid,unpaid',
 				'show_label' => $instance['show_label'] ?? 'yes',
+				'anonymize'  => $instance['anonymize'] ?? 'no',
 			)
 		);
 		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -91,6 +92,7 @@ class LeaderboardWidget extends \WP_Widget {
 			'referrals'  => 'yes',
 			'status'     => 'paid,unpaid',
 			'show_label' => 'yes',
+			'anonymize'  => 'no',
 		);
 
 		$instance = wp_parse_args( (array) $instance, $defaults );
@@ -246,6 +248,18 @@ class LeaderboardWidget extends \WP_Widget {
 			</label>
 		</p>
 
+		<!-- Anonymize Names -->
+		<p>
+			<input type="checkbox"
+				id="<?php echo esc_attr( $this->get_field_id( 'anonymize' ) ); ?>"
+				name="<?php echo esc_attr( $this->get_field_name( 'anonymize' ) ); ?>"
+				value="yes"
+				<?php checked( $instance['anonymize'], 'yes' ); ?> />
+			<label for="<?php echo esc_attr( $this->get_field_id( 'anonymize' ) ); ?>">
+				<?php esc_html_e( 'Anonymize Names', 'affiliatewp-leaderboard-enhanced' ); ?>
+			</label>
+		</p>
+
 		<?php
 		return '';
 	}
@@ -281,6 +295,7 @@ class LeaderboardWidget extends \WP_Widget {
 				? $new_instance['status']
 				: 'paid,unpaid',
 			'show_label' => isset( $new_instance['show_label'] ) ? 'yes' : 'no',
+			'anonymize'  => isset( $new_instance['anonymize'] ) ? 'yes' : 'no',
 		);
 	}
 }
