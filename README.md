@@ -79,6 +79,7 @@ If today **is** the chosen start day, the week begins today. The window advances
 | `referrals` | `yes` | Show each affiliate's referral count: `yes` or `no` |
 | `status` | `paid,unpaid` | Comma-separated referral statuses to include. Accepted values: `paid`, `unpaid`, `pending` |
 | `show_label` | `yes` | Show the period label above the list (e.g. "Jun 10–16, 2026" or "2026"): `yes` or `no` |
+| `anonymize` | `no` | Abbreviate affiliate last names to protect privacy: `yes` or `no`. e.g. "John Doe" → "John D." Single-word names are left unchanged. |
 
 ### Examples
 
@@ -105,6 +106,11 @@ If today **is** the chosen start day, the week begins today. The window advances
 **Friday–Thursday week, top 3, show both metrics:**
 ```
 [affiliate_leaderboard_enhanced week_start="friday" number="3" earnings="yes" referrals="yes"]
+```
+
+**Current week with anonymized names:**
+```
+[affiliate_leaderboard_enhanced anonymize="yes"]
 ```
 
 ### Output HTML
@@ -154,6 +160,7 @@ Navigate to **Appearance → Widgets** (or the block-based widget editor) and ad
 | **Show Referrals** | Checkbox — include referral count column |
 | **Referral Status** | Dropdown: "Paid + Unpaid" or "Paid only" |
 | **Show Period Label** | Checkbox — show the date label above the list |
+| **Anonymize Names** | Checkbox — abbreviate affiliate last names (e.g. "John Doe" → "John D.") |
 
 The widget renders identical HTML to the shortcode, so any CSS targeting `.affwp-leaderboard-enhanced` applies to both.
 
