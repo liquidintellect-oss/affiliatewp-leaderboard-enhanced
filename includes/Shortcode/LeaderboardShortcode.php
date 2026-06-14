@@ -161,6 +161,13 @@ class LeaderboardShortcode {
 						. ' ' . esc_html__( 'referrals', 'affiliatewp-leaderboard-enhanced' );
 				}
 
+				// Name and stats spans are built entirely from individually-escaped
+				// values so no outer sanitisation pass is needed — and avoiding one
+				// prevents server-side kses configurations from stripping our spans.
+				//
+				// $name_span:  affiliate_name escaped by esc_html().
+				// $stats_span: currency escaped by wp_kses_post(); count by absint();
+				// labels escaped by esc_html__().
 				$name_span = '<span class="affwp-leaderboard-name">'
 					. esc_html( $entry->affiliate_name )
 					. '</span>';
@@ -172,10 +179,8 @@ class LeaderboardShortcode {
 						. '</span>';
 				}
 
-				// One compact line per <li> — wpautop only inserts <p></p> for
-				// whitespace/newlines it finds inside block elements.  A single
-				// unbroken line gives it nothing to act on.
-				$html .= '<li>' . wp_kses_post( $name_span . $stats_span ) . '</li>' . "\n";
+				// Single compact line — no internal whitespace for wpautop to act on.
+				$html .= '<li>' . $name_span . $stats_span . '</li>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
 
 			$html .= '</ol>' . "\n";
