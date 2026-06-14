@@ -3,7 +3,7 @@
 use AffiliateWPLeaderboardEnhanced\Leaderboard\LeaderboardEntry;
 use AffiliateWPLeaderboardEnhanced\Leaderboard\ReferralRepositoryInterface;
 use AffiliateWPLeaderboardEnhanced\Leaderboard\WeeklyLeaderboard;
-use AffiliateWPLeaderboardEnhanced\WeekRange;
+use AffiliateWPLeaderboardEnhanced\DatePeriod;
 use PHPUnit\Framework\TestCase;
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
@@ -37,11 +37,11 @@ class StubReferralRepository implements ReferralRepositoryInterface {
 		$this->names = $names;
 	}
 
-	public function getEarningsSummedByAffiliate( WeekRange $range, array $statuses ): array {
+	public function getEarningsSummedByAffiliate( DatePeriod $range, array $statuses ): array {
 		return $this->earningsRows;
 	}
 
-	public function getAffiliateIdsForReferrals( WeekRange $range, array $statuses ): array {
+	public function getAffiliateIdsForReferrals( DatePeriod $range, array $statuses ): array {
 		return $this->affiliateIds;
 	}
 
@@ -56,13 +56,13 @@ class WeeklyLeaderboardTest extends TestCase {
 
 	private StubReferralRepository $repo;
 	private WeeklyLeaderboard $leaderboard;
-	private WeekRange $range;
+	private DatePeriod $range;
 
 	protected function setUp(): void {
 		WP_Mock::setUp();
 		$this->repo        = new StubReferralRepository();
 		$this->leaderboard = new WeeklyLeaderboard( $this->repo );
-		$this->range       = new WeekRange( '2026-06-08 00:00:00', '2026-06-14 23:59:59', 'Jun 8–Jun 14, 2026' );
+		$this->range       = new DatePeriod( '2026-06-08 00:00:00', '2026-06-14 23:59:59', 'Jun 8–Jun 14, 2026' );
 	}
 
 	protected function tearDown(): void {

@@ -7,14 +7,14 @@
 
 namespace AffiliateWPLeaderboardEnhanced\Leaderboard;
 
-use AffiliateWPLeaderboardEnhanced\WeekRange;
+use AffiliateWPLeaderboardEnhanced\DatePeriod;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * Builds a ranked list of LeaderboardEntry objects for a given WeekRange.
+ * Builds a ranked list of LeaderboardEntry objects for a given DatePeriod.
  *
  * All data access is delegated to ReferralRepositoryInterface so this class
  * contains only business logic and is fully unit-testable without WordPress.
@@ -41,7 +41,7 @@ class WeeklyLeaderboard {
 	 *   5. Sort by the requested metric and direction.
 	 *   6. Slice to the requested maximum count.
 	 *
-	 * @param WeekRange         $range    The week to score.
+	 * @param DatePeriod        $range    The week to score.
 	 * @param array<int,string> $statuses Referral statuses to include (e.g. ['paid','unpaid']).
 	 * @param int               $number   Maximum entries to return.
 	 * @param string            $orderby  Sort key: 'earnings' or 'referrals'.
@@ -49,7 +49,7 @@ class WeeklyLeaderboard {
 	 * @return list<LeaderboardEntry>
 	 */
 	public function build(
-		WeekRange $range,
+		DatePeriod $range,
 		array $statuses,
 		int $number,
 		string $orderby,

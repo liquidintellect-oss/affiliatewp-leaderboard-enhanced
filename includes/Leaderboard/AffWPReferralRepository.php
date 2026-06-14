@@ -7,7 +7,7 @@
 
 namespace AffiliateWPLeaderboardEnhanced\Leaderboard;
 
-use AffiliateWPLeaderboardEnhanced\WeekRange;
+use AffiliateWPLeaderboardEnhanced\DatePeriod;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -28,11 +28,11 @@ class AffWPReferralRepository implements ReferralRepositoryInterface {
 	 * Uses get_referrals() with groupby + sum_fields to collapse referrals into
 	 * one aggregated row per affiliate containing the earnings sum.
 	 *
-	 * @param WeekRange         $range    The date window to query.
+	 * @param DatePeriod        $range    The date window to query.
 	 * @param array<int,string> $statuses Referral statuses to include.
 	 * @return list<object>
 	 */
-	public function getEarningsSummedByAffiliate( WeekRange $range, array $statuses ): array {
+	public function getEarningsSummedByAffiliate( DatePeriod $range, array $statuses ): array {
 		$rows = affiliate_wp()->referrals->get_referrals(
 			array(
 				'date'       => array(
@@ -56,11 +56,11 @@ class AffWPReferralRepository implements ReferralRepositoryInterface {
 	 * Requests only the affiliate_id field so that array_count_values() on the
 	 * result gives per-affiliate referral counts cheaply.
 	 *
-	 * @param WeekRange         $range    The date window to query.
+	 * @param DatePeriod        $range    The date window to query.
 	 * @param array<int,string> $statuses Referral statuses to include.
 	 * @return list<int>
 	 */
-	public function getAffiliateIdsForReferrals( WeekRange $range, array $statuses ): array {
+	public function getAffiliateIdsForReferrals( DatePeriod $range, array $statuses ): array {
 		$ids = affiliate_wp()->referrals->get_referrals(
 			array(
 				'date'   => array(

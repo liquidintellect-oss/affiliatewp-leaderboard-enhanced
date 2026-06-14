@@ -1,14 +1,21 @@
 # AffiliateWP – Leaderboard Enhanced
 
-A WordPress plugin that displays an affiliate sales leaderboard scoped to the **current rolling week**, with the week-start day configurable by the site administrator. Available as both a shortcode and a sidebar widget.
+A WordPress plugin that displays an affiliate sales leaderboard scoped to either the **current rolling week** or the **current calendar year**, with the period and week-start day configurable by the site administrator. Available as both a shortcode and a sidebar widget.
 
 ---
 
 ## Overview
 
-The standard AffiliateWP leaderboard addon shows all-time cumulative stats. This plugin addresses the common need to highlight which affiliates are performing best *right now* — motivating friendly competition and letting you run weekly contests without manual resets.
+The standard AffiliateWP leaderboard addon shows all-time cumulative stats. This plugin addresses the common need to highlight which affiliates are performing best *right now* — motivating friendly competition and letting you run weekly or annual contests without manual resets.
 
-The "week" is always a live, rolling 7-day window: from the most recent occurrence of your chosen start day (midnight) through 6 days later (11:59 PM). The window automatically advances each week — no cron jobs or manual intervention required.
+Two date periods are supported:
+
+| Period | Description |
+|---|---|
+| **Current Week** | A rolling 7-day window starting on the admin-chosen day of the week. Advances automatically — no cron jobs needed. |
+| **Current Year** | Jan 1 00:00:00 through Dec 31 23:59:59 of the current calendar year. |
+
+This plugin is a **companion** to `affiliatewp-leaderboard`, not a replacement. Both can be active at the same time — the original continues to show all-time stats while this plugin shows the selected period.
 
 ---
 
@@ -19,8 +26,6 @@ The "week" is always a live, rolling 7-day window: from the most recent occurren
 | WordPress | 6.4 |
 | PHP | 8.1 |
 | AffiliateWP | 2.6 |
-
-This plugin is **independent** of the `affiliatewp-leaderboard` addon. Both can be active simultaneously — the original continues to show all-time stats while this plugin shows the current week.
 
 ---
 
@@ -34,7 +39,7 @@ This plugin is **independent** of the `affiliatewp-leaderboard` addon. Both can 
 
 ## How the Week Window Works
 
-The admin chooses one day of the week as the "week start." The leaderboard always covers:
+When `period="week"` is used, the admin chooses one day of the week as the "week start." The leaderboard always covers:
 
 ```
 [most recent occurrence of chosen day] 00:00:00
@@ -51,51 +56,55 @@ The admin chooses one day of the week as the "week start." The leaderboard alway
 | Tuesday | Wed Jun 10 | Tue Jun 16 |
 | Wednesday (next week) | Wed Jun 17 | Tue Jun 23 |
 
-If today **is** the chosen start day, the week begins today. The window advances automatically at midnight when the next occurrence of the start day arrives.
-
-All date calculations use the **WordPress site timezone** (Settings → General → Timezone), not the server timezone.
+If today **is** the chosen start day, the week begins today. The window advances automatically at midnight when the next occurrence of the start day arrives. All date calculations use the **WordPress site timezone** (Settings → General → Timezone), not the server timezone.
 
 ---
 
 ## Shortcode
 
 ```
-[affiliate_leaderboard_week]
+[affiliate_leaderboard_enhanced]
 ```
 
 ### Attributes
 
 | Attribute | Default | Description |
 |---|---|---|
-| `week_start` | `monday` | Day the leaderboard week begins. Accepts: `sunday` `monday` `tuesday` `wednesday` `thursday` `friday` `saturday` |
+| `period` | `week` | Date window to display. Accepts: `week` \| `year` |
+| `week_start` | `monday` | Day the week begins (applies to `period="week"` only). Accepts: `sunday` `monday` `tuesday` `wednesday` `thursday` `friday` `saturday` |
 | `number` | `10` | Maximum number of affiliates to display |
 | `orderby` | `earnings` | Sort metric: `earnings` or `referrals` |
 | `order` | `DESC` | Sort direction: `DESC` (highest first) or `ASC` (lowest first) |
 | `earnings` | `yes` | Show each affiliate's earnings total: `yes` or `no` |
 | `referrals` | `yes` | Show each affiliate's referral count: `yes` or `no` |
 | `status` | `paid,unpaid` | Comma-separated referral statuses to include. Accepted values: `paid`, `unpaid`, `pending` |
-| `show_label` | `yes` | Show the date range label above the list (e.g. "Jun 10–16, 2026"): `yes` or `no` |
+| `show_label` | `yes` | Show the period label above the list (e.g. "Jun 10–16, 2026" or "2026"): `yes` or `no` |
 
 ### Examples
 
-**Basic — default Monday week, top 10 by earnings:**
+**Basic — current week, Monday start, top 10 by earnings:**
 ```
-[affiliate_leaderboard_week]
-```
-
-**Wednesday week start, top 5, earnings only:**
-```
-[affiliate_leaderboard_week week_start="wednesday" number="5" referrals="no"]
+[affiliate_leaderboard_enhanced]
 ```
 
-**Rank by referral count, paid referrals only, no date label:**
+**Current year leaderboard, top 20:**
 ```
-[affiliate_leaderboard_week orderby="referrals" status="paid" show_label="no"]
+[affiliate_leaderboard_enhanced period="year" number="20"]
+```
+
+**Wednesday–Tuesday week, top 5, earnings only:**
+```
+[affiliate_leaderboard_enhanced week_start="wednesday" number="5" referrals="no"]
+```
+
+**Year-to-date, ranked by referral count, paid only, no label:**
+```
+[affiliate_leaderboard_enhanced period="year" orderby="referrals" status="paid" show_label="no"]
 ```
 
 **Friday–Thursday week, top 3, show both metrics:**
 ```
-[affiliate_leaderboard_week week_start="friday" number="3" earnings="yes" referrals="yes"]
+[affiliate_leaderboard_enhanced week_start="friday" number="3" earnings="yes" referrals="yes"]
 ```
 
 ### Output HTML
@@ -116,11 +125,13 @@ All date calculations use the **WordPress site timezone** (Settings → General 
 </div>
 ```
 
-When no affiliate activity exists in the current week:
+The label for a year period displays as the four-digit year: `<p class="affwp-leaderboard-week-label">2026</p>`
+
+When no affiliate activity exists in the selected period:
 
 ```html
 <div class="affwp-leaderboard-week-wrap">
-  <p class="affwp-leaderboard-week-empty">No affiliate activity this week.</p>
+  <p class="affwp-leaderboard-week-empty">No affiliate activity for this period.</p>
 </div>
 ```
 
@@ -128,20 +139,21 @@ When no affiliate activity exists in the current week:
 
 ## Sidebar Widget
 
-Navigate to **Appearance → Widgets** (or the block-based widget editor) and add the **Affiliate Week Leaderboard** widget to any sidebar.
+Navigate to **Appearance → Widgets** (or the block-based widget editor) and add the **Affiliate Leaderboard Enhanced** widget to any sidebar.
 
 ### Widget Settings
 
 | Setting | Description |
 |---|---|
 | **Title** | Widget title displayed above the leaderboard |
-| **Week Starts On** | Dropdown: Sunday through Saturday |
+| **Period** | Dropdown: Current Week / Current Year |
+| **Week Starts On** | Dropdown: Sunday through Saturday (applies to Current Week only) |
 | **Affiliates to Show** | Number of affiliates to display (minimum 1) |
 | **Order By** | Earnings or Referrals |
 | **Show Earnings** | Checkbox — include earnings column |
 | **Show Referrals** | Checkbox — include referral count column |
 | **Referral Status** | Dropdown: "Paid + Unpaid" or "Paid only" |
-| **Show Date Range Label** | Checkbox — show the "Jun 10–16, 2026" label |
+| **Show Period Label** | Checkbox — show the date label above the list |
 
 The widget renders identical HTML to the shortcode, so any CSS targeting `.affwp-leaderboard-week` applies to both.
 
@@ -154,14 +166,14 @@ The plugin enqueues `assets/css/leaderboard-enhanced.css` on all front-end pages
 | Class | Applied to |
 |---|---|
 | `.affwp-leaderboard-week-wrap` | Outer container `<div>` |
-| `.affwp-leaderboard-week-label` | Date range label `<p>` |
+| `.affwp-leaderboard-week-label` | Period label `<p>` |
 | `.affwp-leaderboard` | The `<ol>` list (shared with original addon) |
 | `.affwp-leaderboard-week` | Additional class on the `<ol>` for specificity |
 | `.affwp-leaderboard-week-empty` | "No activity" message `<p>` |
 
-If the original `affiliatewp-leaderboard` addon is also active, its `.affwp-leaderboard p` styles apply here too, since the `<ol>` carries the same base class.
+If the original `affiliatewp-leaderboard` addon is also active, its `.affwp-leaderboard p` styles apply here too since the `<ol>` carries the same base class.
 
-**To override styles**, add rules to your theme's stylesheet targeting `.affwp-leaderboard-week`:
+**To override styles**, add rules to your theme's stylesheet:
 
 ```css
 .affwp-leaderboard-week li {
@@ -179,10 +191,10 @@ If the original `affiliatewp-leaderboard` addon is also active, its `.affwp-lead
 
 ## How Referral Data Is Counted
 
-- Earnings and referral counts are calculated **live** from the referrals table each page load, filtered by the current week window.
+- Earnings and referral counts are calculated **live** from the referrals table on each page load, filtered by the selected period window.
 - Only referrals with the statuses specified in the `status` attribute (default: `paid` and `unpaid`) are counted.
-- `pending` and `rejected` referrals are excluded by default. Include `pending` by adding it to the `status` attribute: `status="paid,unpaid,pending"`.
-- Affiliates with zero referrals in the current week do not appear in the list.
+- `pending` and `rejected` referrals are excluded by default. Include `pending` with `status="paid,unpaid,pending"`.
+- Affiliates with zero qualifying referrals in the selected period do not appear in the list.
 - Earnings reflect the **referral amount** (commission), not the order total.
 - Visit counts are not supported — this plugin tracks conversions (referrals), not clicks.
 
@@ -241,14 +253,14 @@ affiliatewp-leaderboard-enhanced/
 ├── affiliatewp-leaderboard-enhanced.php   Main plugin file (bootstrap + autoloader)
 ├── includes/
 │   ├── Plugin.php                          Hook registration
-│   ├── WeekRange.php                       Value object: week start/end/label
+│   ├── DatePeriod.php                      Value object: start/end/label for week or year
 │   ├── Leaderboard/
 │   │   ├── LeaderboardEntry.php            Value object: per-affiliate data
 │   │   ├── ReferralRepositoryInterface.php Data access contract
 │   │   ├── AffWPReferralRepository.php     Production AffiliateWP implementation
 │   │   └── WeeklyLeaderboard.php           Aggregation + sorting service
 │   ├── Shortcode/
-│   │   └── LeaderboardShortcode.php        [affiliate_leaderboard_week] handler
+│   │   └── LeaderboardShortcode.php        [affiliate_leaderboard_enhanced] handler
 │   └── Widget/
 │       └── LeaderboardWidget.php           Sidebar widget
 ├── assets/
@@ -258,14 +270,14 @@ affiliatewp-leaderboard-enhanced/
 │   ├── bootstrap.php                       PHPUnit bootstrap (WP_Mock setup)
 │   └── Unit/
 │       ├── PluginTest.php                  Hook registration tests
-│       ├── WeekRangeTest.php               DoW calculation + edge cases
+│       ├── DatePeriodTest.php              Week DoW calculation + year period tests
 │       ├── Leaderboard/
 │       │   ├── LeaderboardEntryTest.php
 │       │   └── WeeklyLeaderboardTest.php   Sorting, slicing, aggregation
 │       ├── Shortcode/
 │       │   └── LeaderboardShortcodeTest.php HTML rendering tests
 │       └── Widget/
-│           └── LeaderboardWidgetTest.php   Settings, sanitization, delegation
+│           └── LeaderboardWidgetTest.php   Period, settings, sanitization, delegation
 ├── build.gradle
 ├── composer.json
 ├── phpcs.xml

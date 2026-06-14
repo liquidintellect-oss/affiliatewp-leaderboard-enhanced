@@ -1,26 +1,30 @@
 <?php
 /**
- * Shortcode: [affiliate_leaderboard_week]
+ * Shortcode: [affiliate_leaderboard_enhanced]
  *
  * @package AffiliateWPLeaderboardEnhanced
  */
 
 namespace AffiliateWPLeaderboardEnhanced\Shortcode;
 
+use AffiliateWPLeaderboardEnhanced\DatePeriod;
 use AffiliateWPLeaderboardEnhanced\Leaderboard\LeaderboardEntry;
 use AffiliateWPLeaderboardEnhanced\Leaderboard\WeeklyLeaderboard;
-use AffiliateWPLeaderboardEnhanced\WeekRange;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * Handles attribute parsing and HTML rendering for [affiliate_leaderboard_week].
+ * Handles attribute parsing and HTML rendering for [affiliate_leaderboard_enhanced].
  *
  * Shortcode attributes
  * --------------------
- * week_start  string  Day name that starts the leaderboard week. Default 'monday'.
+ * period      string  Date window to score. Default 'week'.
+ *                     Accepts: week | year
+ *                       week — rolling 7-day window starting on week_start day.
+ *                       year — Jan 1 through Dec 31 of the current calendar year.
+ * week_start  string  Day that begins the week (period=week only). Default 'monday'.
  *                     Accepts: sunday | monday | tuesday | wednesday |
  *                              thursday | friday | saturday
  * number      int     Maximum affiliates to display. Default 10.
@@ -29,7 +33,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * earnings    string  Show earnings column: 'yes' (default) or 'no'.
  * referrals   string  Show referral count column: 'yes' (default) or 'no'.
  * status      string  Comma-separated referral statuses. Default 'paid,unpaid'.
- * show_label  string  Show the "Jun 10–16, 2026" date label: 'yes' (default) or 'no'.
+ * show_label  string  Show the period label above the list: 'yes' (default) or 'no'.
  */
 class LeaderboardShortcode {
 
@@ -51,6 +55,7 @@ class LeaderboardShortcode {
 	public function render( $atts ): string {
 		$atts = shortcode_atts(
 			array(
+				'period'     => 'week',
 				'week_start' => 'monday',
 				'number'     => '10',
 				'orderby'    => 'earnings',
@@ -61,11 +66,19 @@ class LeaderboardShortcode {
 				'show_label' => 'yes',
 			),
 			$atts,
-			'affiliate_leaderboard_week'
+			'affiliate_leaderboard_enhanced'
 		);
 
-		$dow      = WeekRange::dayNameToInt( $atts['week_start'] );
-		$range    = WeekRange::forDayOfWeek( $dow, new \DateTimeImmutable( 'now', wp_timezone() ) );
+		$now    = new \DateTimeImmutable( 'now', wp_timezone() );
+		$period = strtolower( $atts['period'] );
+
+		if ( 'year' === $period ) {
+			$range = DatePeriod::forCurrentYear( $now );
+		} else {
+			$dow   = DatePeriod::dayNameToInt( $atts['week_start'] );
+			$range = DatePeriod::forDayOfWeek( $dow, $now );
+		}
+
 		$statuses = array_values( array_filter( array_map( 'trim', explode( ',', $atts['status'] ) ) ) );
 		$number   = max( 1, (int) $atts['number'] );
 		$orderby  = in_array( $atts['orderby'], array( 'earnings', 'referrals' ), true )
@@ -88,16 +101,16 @@ class LeaderboardShortcode {
 	 * Kept as a separate public method so unit tests can exercise the rendering
 	 * logic without needing to mock the full WordPress + AffiliateWP stack.
 	 *
-	 * @param array<int,LeaderboardEntry> $entries Ranked affiliate entries.
-	 * @param WeekRange                   $range   The week window (for the label).
+	 * @param array<int,LeaderboardEntry> $entries        Ranked affiliate entries.
+	 * @param DatePeriod                  $range          The date period (for the label).
 	 * @param bool                        $show_earnings  Whether to show the earnings column.
 	 * @param bool                        $show_referrals Whether to show the referral count column.
-	 * @param bool                        $show_label     Whether to show the date range label.
+	 * @param bool                        $show_label     Whether to show the period label.
 	 * @return string HTML.
 	 */
 	public function buildHtml(
 		array $entries,
-		WeekRange $range,
+		DatePeriod $range,
 		bool $show_earnings,
 		bool $show_referrals,
 		bool $show_label
@@ -137,7 +150,7 @@ class LeaderboardShortcode {
 			</ol>
 		<?php else : ?>
 			<p class="affwp-leaderboard-week-empty">
-				<?php esc_html_e( 'No affiliate activity this week.', 'affiliatewp-leaderboard-enhanced' ); ?>
+				<?php esc_html_e( 'No affiliate activity for this period.', 'affiliatewp-leaderboard-enhanced' ); ?>
 			</p>
 		<?php endif; ?>
 		</div>

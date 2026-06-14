@@ -3,16 +3,16 @@
 use AffiliateWPLeaderboardEnhanced\Leaderboard\LeaderboardEntry;
 use AffiliateWPLeaderboardEnhanced\Leaderboard\WeeklyLeaderboard;
 use AffiliateWPLeaderboardEnhanced\Shortcode\LeaderboardShortcode;
-use AffiliateWPLeaderboardEnhanced\WeekRange;
+use AffiliateWPLeaderboardEnhanced\DatePeriod;
 use PHPUnit\Framework\TestCase;
 
 class LeaderboardShortcodeTest extends TestCase {
 
-	private WeekRange $range;
+	private DatePeriod $range;
 
 	protected function setUp(): void {
 		WP_Mock::setUp();
-		$this->range = new WeekRange( '2026-06-08 00:00:00', '2026-06-14 23:59:59', 'Jun 8–Jun 14, 2026' );
+		$this->range = new DatePeriod( '2026-06-08 00:00:00', '2026-06-14 23:59:59', 'Jun 8–Jun 14, 2026' );
 	}
 
 	protected function tearDown(): void {
