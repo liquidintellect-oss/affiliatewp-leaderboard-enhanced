@@ -81,9 +81,19 @@ class WeeklyLeaderboard {
 		usort(
 			$entries,
 			static function ( LeaderboardEntry $a, LeaderboardEntry $b ) use ( $sort_by_referrals, $sort_desc ): int {
-				$a_val = $sort_by_referrals ? $a->referral_count : $a->earnings;
-				$b_val = $sort_by_referrals ? $b->referral_count : $b->earnings;
-				return $sort_desc ? ( $b_val <=> $a_val ) : ( $a_val <=> $b_val );
+				// Primary sort: chosen metric.
+				$a_primary = $sort_by_referrals ? $a->referral_count : $a->earnings;
+				$b_primary = $sort_by_referrals ? $b->referral_count : $b->earnings;
+				$primary   = $sort_desc ? ( $b_primary <=> $a_primary ) : ( $a_primary <=> $b_primary );
+
+				if ( 0 !== $primary ) {
+					return $primary;
+				}
+
+				// Secondary sort: the other metric as a tiebreaker, same direction.
+				$a_secondary = $sort_by_referrals ? $a->earnings : $a->referral_count;
+				$b_secondary = $sort_by_referrals ? $b->earnings : $b->referral_count;
+				return $sort_desc ? ( $b_secondary <=> $a_secondary ) : ( $a_secondary <=> $b_secondary );
 			}
 		);
 

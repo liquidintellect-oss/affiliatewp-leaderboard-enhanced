@@ -138,6 +138,80 @@ class WeeklyLeaderboardTest extends TestCase {
 		$this->assertSame( 2, $result[0]->affiliate_id ); // 2 referrals first in ASC
 	}
 
+	// ── tiebreaker sorting ───────────────────────────────────────────────────
+
+	/** @test */
+	public function earnings_tie_broken_by_referral_count_descending(): void {
+		// Both affiliates earned $100; affiliate 2 has more referrals → ranks first.
+		$this->repo->setEarningsRows(
+			array(
+				(object) array( 'affiliate_id' => 1, 'amount_sum' => 100.0 ),
+				(object) array( 'affiliate_id' => 2, 'amount_sum' => 100.0 ),
+			)
+		);
+		$this->repo->setAffiliateIds( array( 1, 1, 2, 2, 2 ) ); // 2 for #1, 3 for #2
+		$this->repo->setNames( array( 1 => 'Alice', 2 => 'Bob' ) );
+
+		$result = $this->leaderboard->build( $this->range, array( 'paid' ), 10, 'earnings', 'DESC' );
+
+		$this->assertSame( 2, $result[0]->affiliate_id ); // more referrals breaks tie
+		$this->assertSame( 1, $result[1]->affiliate_id );
+	}
+
+	/** @test */
+	public function earnings_tie_broken_by_referral_count_ascending(): void {
+		// Both earned $100; affiliate 1 has fewer referrals → ranks first in ASC.
+		$this->repo->setEarningsRows(
+			array(
+				(object) array( 'affiliate_id' => 1, 'amount_sum' => 100.0 ),
+				(object) array( 'affiliate_id' => 2, 'amount_sum' => 100.0 ),
+			)
+		);
+		$this->repo->setAffiliateIds( array( 1, 1, 2, 2, 2 ) ); // 2 for #1, 3 for #2
+		$this->repo->setNames( array( 1 => 'Alice', 2 => 'Bob' ) );
+
+		$result = $this->leaderboard->build( $this->range, array( 'paid' ), 10, 'earnings', 'ASC' );
+
+		$this->assertSame( 1, $result[0]->affiliate_id ); // fewer referrals first in ASC
+		$this->assertSame( 2, $result[1]->affiliate_id );
+	}
+
+	/** @test */
+	public function referral_count_tie_broken_by_earnings_descending(): void {
+		// Both have 3 referrals; affiliate 2 earned more → ranks first.
+		$this->repo->setEarningsRows(
+			array(
+				(object) array( 'affiliate_id' => 1, 'amount_sum' => 50.0 ),
+				(object) array( 'affiliate_id' => 2, 'amount_sum' => 200.0 ),
+			)
+		);
+		$this->repo->setAffiliateIds( array( 1, 1, 1, 2, 2, 2 ) ); // 3 each
+		$this->repo->setNames( array( 1 => 'Alice', 2 => 'Bob' ) );
+
+		$result = $this->leaderboard->build( $this->range, array( 'paid' ), 10, 'referrals', 'DESC' );
+
+		$this->assertSame( 2, $result[0]->affiliate_id ); // higher earnings breaks tie
+		$this->assertSame( 1, $result[1]->affiliate_id );
+	}
+
+	/** @test */
+	public function referral_count_tie_broken_by_earnings_ascending(): void {
+		// Both have 3 referrals; affiliate 1 earned less → ranks first in ASC.
+		$this->repo->setEarningsRows(
+			array(
+				(object) array( 'affiliate_id' => 1, 'amount_sum' => 50.0 ),
+				(object) array( 'affiliate_id' => 2, 'amount_sum' => 200.0 ),
+			)
+		);
+		$this->repo->setAffiliateIds( array( 1, 1, 1, 2, 2, 2 ) ); // 3 each
+		$this->repo->setNames( array( 1 => 'Alice', 2 => 'Bob' ) );
+
+		$result = $this->leaderboard->build( $this->range, array( 'paid' ), 10, 'referrals', 'ASC' );
+
+		$this->assertSame( 1, $result[0]->affiliate_id ); // lower earnings first in ASC
+		$this->assertSame( 2, $result[1]->affiliate_id );
+	}
+
 	// ── number limit ──────────────────────────────────────────────────────────
 
 	/** @test */
