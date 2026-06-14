@@ -22,7 +22,7 @@ class PluginTest extends TestCase {
 		// add_shortcode receives an [$object, 'method'] array callback — Mockery::any()
 		// matches it since userFunction() returns a Mockery expectation.
 		WP_Mock::userFunction( 'add_shortcode' )
-			->with( 'affiliate_leaderboard_week', Mockery::any() )
+			->with( 'affiliate_leaderboard_enhanced', Mockery::any() )
 			->once();
 
 		WP_Mock::expectActionAdded( 'widgets_init', Closure::class );
@@ -30,7 +30,7 @@ class PluginTest extends TestCase {
 	}
 
 	/** @test */
-	public function register_adds_affiliate_leaderboard_week_shortcode(): void {
+	public function register_adds_affiliate_leaderboard_enhanced_shortcode(): void {
 		$this->expectAllHooks();
 
 		( new Plugin() )->register();

@@ -7,7 +7,7 @@
 
 namespace AffiliateWPLeaderboardEnhanced\Leaderboard;
 
-use AffiliateWPLeaderboardEnhanced\WeekRange;
+use AffiliateWPLeaderboardEnhanced\DatePeriod;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -29,22 +29,22 @@ interface ReferralRepositoryInterface {
 	 *   - affiliate_id (int)
 	 *   - amount_sum   (float|string castable to float)
 	 *
-	 * @param WeekRange         $range    The date window to query.
+	 * @param DatePeriod        $range    The date window to query.
 	 * @param array<int,string> $statuses Referral statuses to include, e.g. ['paid','unpaid'].
 	 * @return list<object>
 	 */
-	public function getEarningsSummedByAffiliate( WeekRange $range, array $statuses ): array;
+	public function getEarningsSummedByAffiliate( DatePeriod $range, array $statuses ): array;
 
 	/**
 	 * Return the flat list of affiliate IDs for all referrals in the window —
 	 * one entry per referral (duplicates intact) — so per-affiliate referral
 	 * counts can be derived cheaply with array_count_values().
 	 *
-	 * @param WeekRange         $range    The date window to query.
+	 * @param DatePeriod        $range    The date window to query.
 	 * @param array<int,string> $statuses Referral statuses to include.
 	 * @return list<int>
 	 */
-	public function getAffiliateIdsForReferrals( WeekRange $range, array $statuses ): array;
+	public function getAffiliateIdsForReferrals( DatePeriod $range, array $statuses ): array;
 
 	/**
 	 * Return the display name for the given affiliate.

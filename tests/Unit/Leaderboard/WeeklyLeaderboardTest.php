@@ -3,7 +3,7 @@
 use AffiliateWPLeaderboardEnhanced\Leaderboard\LeaderboardEntry;
 use AffiliateWPLeaderboardEnhanced\Leaderboard\ReferralRepositoryInterface;
 use AffiliateWPLeaderboardEnhanced\Leaderboard\WeeklyLeaderboard;
-use AffiliateWPLeaderboardEnhanced\WeekRange;
+use AffiliateWPLeaderboardEnhanced\DatePeriod;
 use PHPUnit\Framework\TestCase;
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
@@ -37,11 +37,11 @@ class StubReferralRepository implements ReferralRepositoryInterface {
 		$this->names = $names;
 	}
 
-	public function getEarningsSummedByAffiliate( WeekRange $range, array $statuses ): array {
+	public function getEarningsSummedByAffiliate( DatePeriod $range, array $statuses ): array {
 		return $this->earningsRows;
 	}
 
-	public function getAffiliateIdsForReferrals( WeekRange $range, array $statuses ): array {
+	public function getAffiliateIdsForReferrals( DatePeriod $range, array $statuses ): array {
 		return $this->affiliateIds;
 	}
 
@@ -56,13 +56,13 @@ class WeeklyLeaderboardTest extends TestCase {
 
 	private StubReferralRepository $repo;
 	private WeeklyLeaderboard $leaderboard;
-	private WeekRange $range;
+	private DatePeriod $range;
 
 	protected function setUp(): void {
 		WP_Mock::setUp();
 		$this->repo        = new StubReferralRepository();
 		$this->leaderboard = new WeeklyLeaderboard( $this->repo );
-		$this->range       = new WeekRange( '2026-06-08 00:00:00', '2026-06-14 23:59:59', 'Jun 8–Jun 14, 2026' );
+		$this->range       = new DatePeriod( '2026-06-08 00:00:00', '2026-06-14 23:59:59', 'Jun 8–Jun 14, 2026' );
 	}
 
 	protected function tearDown(): void {
@@ -136,6 +136,80 @@ class WeeklyLeaderboardTest extends TestCase {
 		$result = $this->leaderboard->build( $this->range, array( 'paid' ), 10, 'referrals', 'ASC' );
 
 		$this->assertSame( 2, $result[0]->affiliate_id ); // 2 referrals first in ASC
+	}
+
+	// ── tiebreaker sorting ───────────────────────────────────────────────────
+
+	/** @test */
+	public function earnings_tie_broken_by_referral_count_descending(): void {
+		// Both affiliates earned $100; affiliate 2 has more referrals → ranks first.
+		$this->repo->setEarningsRows(
+			array(
+				(object) array( 'affiliate_id' => 1, 'amount_sum' => 100.0 ),
+				(object) array( 'affiliate_id' => 2, 'amount_sum' => 100.0 ),
+			)
+		);
+		$this->repo->setAffiliateIds( array( 1, 1, 2, 2, 2 ) ); // 2 for #1, 3 for #2
+		$this->repo->setNames( array( 1 => 'Alice', 2 => 'Bob' ) );
+
+		$result = $this->leaderboard->build( $this->range, array( 'paid' ), 10, 'earnings', 'DESC' );
+
+		$this->assertSame( 2, $result[0]->affiliate_id ); // more referrals breaks tie
+		$this->assertSame( 1, $result[1]->affiliate_id );
+	}
+
+	/** @test */
+	public function earnings_tie_broken_by_referral_count_ascending(): void {
+		// Both earned $100; affiliate 1 has fewer referrals → ranks first in ASC.
+		$this->repo->setEarningsRows(
+			array(
+				(object) array( 'affiliate_id' => 1, 'amount_sum' => 100.0 ),
+				(object) array( 'affiliate_id' => 2, 'amount_sum' => 100.0 ),
+			)
+		);
+		$this->repo->setAffiliateIds( array( 1, 1, 2, 2, 2 ) ); // 2 for #1, 3 for #2
+		$this->repo->setNames( array( 1 => 'Alice', 2 => 'Bob' ) );
+
+		$result = $this->leaderboard->build( $this->range, array( 'paid' ), 10, 'earnings', 'ASC' );
+
+		$this->assertSame( 1, $result[0]->affiliate_id ); // fewer referrals first in ASC
+		$this->assertSame( 2, $result[1]->affiliate_id );
+	}
+
+	/** @test */
+	public function referral_count_tie_broken_by_earnings_descending(): void {
+		// Both have 3 referrals; affiliate 2 earned more → ranks first.
+		$this->repo->setEarningsRows(
+			array(
+				(object) array( 'affiliate_id' => 1, 'amount_sum' => 50.0 ),
+				(object) array( 'affiliate_id' => 2, 'amount_sum' => 200.0 ),
+			)
+		);
+		$this->repo->setAffiliateIds( array( 1, 1, 1, 2, 2, 2 ) ); // 3 each
+		$this->repo->setNames( array( 1 => 'Alice', 2 => 'Bob' ) );
+
+		$result = $this->leaderboard->build( $this->range, array( 'paid' ), 10, 'referrals', 'DESC' );
+
+		$this->assertSame( 2, $result[0]->affiliate_id ); // higher earnings breaks tie
+		$this->assertSame( 1, $result[1]->affiliate_id );
+	}
+
+	/** @test */
+	public function referral_count_tie_broken_by_earnings_ascending(): void {
+		// Both have 3 referrals; affiliate 1 earned less → ranks first in ASC.
+		$this->repo->setEarningsRows(
+			array(
+				(object) array( 'affiliate_id' => 1, 'amount_sum' => 50.0 ),
+				(object) array( 'affiliate_id' => 2, 'amount_sum' => 200.0 ),
+			)
+		);
+		$this->repo->setAffiliateIds( array( 1, 1, 1, 2, 2, 2 ) ); // 3 each
+		$this->repo->setNames( array( 1 => 'Alice', 2 => 'Bob' ) );
+
+		$result = $this->leaderboard->build( $this->range, array( 'paid' ), 10, 'referrals', 'ASC' );
+
+		$this->assertSame( 1, $result[0]->affiliate_id ); // lower earnings first in ASC
+		$this->assertSame( 2, $result[1]->affiliate_id );
 	}
 
 	// ── number limit ──────────────────────────────────────────────────────────

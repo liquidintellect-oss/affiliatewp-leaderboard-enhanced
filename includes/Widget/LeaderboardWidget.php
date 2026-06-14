@@ -1,6 +1,6 @@
 <?php
 /**
- * Sidebar widget: Affiliate Week Leaderboard.
+ * Sidebar widget: Affiliate Leaderboard Enhanced.
  *
  * @package AffiliateWPLeaderboardEnhanced
  */
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Renders the weekly affiliate leaderboard as a configurable sidebar widget.
+ * Renders the affiliate leaderboard as a configurable sidebar widget.
  *
  * The widget delegates all leaderboard logic to LeaderboardShortcode::render()
  * by converting its saved settings to the equivalent shortcode attribute array.
@@ -29,10 +29,10 @@ class LeaderboardWidget extends \WP_Widget {
 	 */
 	public function __construct( private readonly LeaderboardShortcode $shortcode ) {
 		parent::__construct(
-			'affiliatewp_leaderboard_week',
-			esc_html__( 'Affiliate Week Leaderboard', 'affiliatewp-leaderboard-enhanced' ),
+			'affiliatewp_leaderboard_enhanced',
+			esc_html__( 'Affiliate Leaderboard Enhanced', 'affiliatewp-leaderboard-enhanced' ),
 			array(
-				'description' => esc_html__( 'Displays the current week\'s affiliate leaderboard.', 'affiliatewp-leaderboard-enhanced' ),
+				'description' => esc_html__( 'Displays an affiliate leaderboard for the current week or year.', 'affiliatewp-leaderboard-enhanced' ),
 			)
 		);
 	}
@@ -58,6 +58,7 @@ class LeaderboardWidget extends \WP_Widget {
 		// attribute strings, not raw output — they are validated inside render().
 		echo $this->shortcode->render(
 			array(
+				'period'     => $instance['period'] ?? 'week',
 				'week_start' => $instance['week_start'] ?? 'monday',
 				'number'     => $instance['number'] ?? '5',
 				'orderby'    => $instance['orderby'] ?? 'earnings',
@@ -81,7 +82,8 @@ class LeaderboardWidget extends \WP_Widget {
 	 */
 	public function form( $instance ): string { // phpcs:ignore WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid
 		$defaults = array(
-			'title'      => esc_html__( 'This Week\'s Top Affiliates', 'affiliatewp-leaderboard-enhanced' ),
+			'title'      => esc_html__( 'Top Affiliates', 'affiliatewp-leaderboard-enhanced' ),
+			'period'     => 'week',
 			'week_start' => 'monday',
 			'number'     => '5',
 			'orderby'    => 'earnings',
@@ -92,6 +94,11 @@ class LeaderboardWidget extends \WP_Widget {
 		);
 
 		$instance = wp_parse_args( (array) $instance, $defaults );
+
+		$periods = array(
+			'week' => esc_html__( 'Current Week', 'affiliatewp-leaderboard-enhanced' ),
+			'year' => esc_html__( 'Current Year', 'affiliatewp-leaderboard-enhanced' ),
+		);
 
 		$days = array(
 			'sunday'    => esc_html__( 'Sunday', 'affiliatewp-leaderboard-enhanced' ),
@@ -121,7 +128,24 @@ class LeaderboardWidget extends \WP_Widget {
 				value="<?php echo esc_attr( $instance['title'] ); ?>" />
 		</p>
 
-		<!-- Week Starts On -->
+		<!-- Period -->
+		<p>
+			<label for="<?php echo esc_attr( $this->get_field_id( 'period' ) ); ?>">
+				<?php esc_html_e( 'Period:', 'affiliatewp-leaderboard-enhanced' ); ?>
+			</label>
+			<select class="widefat"
+				id="<?php echo esc_attr( $this->get_field_id( 'period' ) ); ?>"
+				name="<?php echo esc_attr( $this->get_field_name( 'period' ) ); ?>">
+				<?php foreach ( $periods as $value => $label ) : ?>
+					<option value="<?php echo esc_attr( $value ); ?>"
+						<?php selected( $instance['period'], $value ); ?>>
+						<?php echo esc_html( $label ); ?>
+					</option>
+				<?php endforeach; ?>
+			</select>
+		</p>
+
+		<!-- Week Starts On (only relevant when period = week) -->
 		<p>
 			<label for="<?php echo esc_attr( $this->get_field_id( 'week_start' ) ); ?>">
 				<?php esc_html_e( 'Week Starts On:', 'affiliatewp-leaderboard-enhanced' ); ?>
@@ -136,6 +160,7 @@ class LeaderboardWidget extends \WP_Widget {
 					</option>
 				<?php endforeach; ?>
 			</select>
+			<small><?php esc_html_e( 'Applies to Current Week only.', 'affiliatewp-leaderboard-enhanced' ); ?></small>
 		</p>
 
 		<!-- Number of Affiliates -->
@@ -217,7 +242,7 @@ class LeaderboardWidget extends \WP_Widget {
 				value="yes"
 				<?php checked( $instance['show_label'], 'yes' ); ?> />
 			<label for="<?php echo esc_attr( $this->get_field_id( 'show_label' ) ); ?>">
-				<?php esc_html_e( 'Show Date Range Label', 'affiliatewp-leaderboard-enhanced' ); ?>
+				<?php esc_html_e( 'Show Period Label', 'affiliatewp-leaderboard-enhanced' ); ?>
 			</label>
 		</p>
 
@@ -233,12 +258,16 @@ class LeaderboardWidget extends \WP_Widget {
 	 * @return array<string,mixed> Sanitised instance to persist.
 	 */
 	public function update( $new_instance, $old_instance ): array { // phpcs:ignore WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid
+		$valid_periods  = array( 'week', 'year' );
 		$valid_days     = array( 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday' );
 		$valid_orderbys = array( 'earnings', 'referrals' );
 		$valid_statuses = array( 'paid,unpaid', 'paid' );
 
 		return array(
 			'title'      => sanitize_text_field( $new_instance['title'] ?? '' ),
+			'period'     => in_array( $new_instance['period'] ?? '', $valid_periods, true )
+				? $new_instance['period']
+				: 'week',
 			'week_start' => in_array( $new_instance['week_start'] ?? '', $valid_days, true )
 				? $new_instance['week_start']
 				: 'monday',

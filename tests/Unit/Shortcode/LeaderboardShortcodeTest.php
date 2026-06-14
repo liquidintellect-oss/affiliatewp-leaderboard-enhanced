@@ -3,16 +3,16 @@
 use AffiliateWPLeaderboardEnhanced\Leaderboard\LeaderboardEntry;
 use AffiliateWPLeaderboardEnhanced\Leaderboard\WeeklyLeaderboard;
 use AffiliateWPLeaderboardEnhanced\Shortcode\LeaderboardShortcode;
-use AffiliateWPLeaderboardEnhanced\WeekRange;
+use AffiliateWPLeaderboardEnhanced\DatePeriod;
 use PHPUnit\Framework\TestCase;
 
 class LeaderboardShortcodeTest extends TestCase {
 
-	private WeekRange $range;
+	private DatePeriod $range;
 
 	protected function setUp(): void {
 		WP_Mock::setUp();
-		$this->range = new WeekRange( '2026-06-08 00:00:00', '2026-06-14 23:59:59', 'Jun 8–Jun 14, 2026' );
+		$this->range = new DatePeriod( '2026-06-08 00:00:00', '2026-06-14 23:59:59', 'Jun 8–Jun 14, 2026' );
 	}
 
 	protected function tearDown(): void {
@@ -28,7 +28,7 @@ class LeaderboardShortcodeTest extends TestCase {
 
 		$html = $shortcode->buildHtml( array(), $this->range, true, true, false );
 
-		$this->assertStringContainsString( 'affwp-leaderboard-week-empty', $html );
+		$this->assertStringContainsString( 'affwp-leaderboard-enhanced-empty', $html );
 		$this->assertStringNotContainsString( '<ol', $html );
 	}
 
@@ -40,7 +40,7 @@ class LeaderboardShortcodeTest extends TestCase {
 
 		$html = $shortcode->buildHtml( array(), $this->range, false, false, true );
 
-		$this->assertStringContainsString( 'affwp-leaderboard-week-label', $html );
+		$this->assertStringContainsString( 'affwp-leaderboard-enhanced-label', $html );
 		$this->assertStringContainsString( 'Jun 8', $html );
 	}
 
@@ -50,7 +50,7 @@ class LeaderboardShortcodeTest extends TestCase {
 
 		$html = $shortcode->buildHtml( array(), $this->range, false, false, false );
 
-		$this->assertStringNotContainsString( 'affwp-leaderboard-week-label', $html );
+		$this->assertStringNotContainsString( 'affwp-leaderboard-enhanced-label', $html );
 	}
 
 	// ── buildHtml: entries ────────────────────────────────────────────────────
@@ -129,12 +129,105 @@ class LeaderboardShortcodeTest extends TestCase {
 
 		$html = $shortcode->buildHtml( $entries, $this->range, false, false, false );
 
-		$this->assertStringContainsString( 'affwp-leaderboard-week', $html );
+		$this->assertStringContainsString( 'affwp-leaderboard-enhanced', $html );
 		$this->assertStringContainsString( '<ol', $html );
 		$this->assertStringContainsString( '<li>', $html );
 	}
 
+	/** @test */
+	public function build_html_wraps_name_in_name_span(): void {
+		$entries   = array( $this->makeEntry( id: 1, name: 'Alice', earnings: 50.0, count: 1 ) );
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
+
+		$html = $shortcode->buildHtml( $entries, $this->range, false, false, false );
+
+		$this->assertStringContainsString( 'class="affwp-leaderboard-name"', $html );
+		$this->assertStringContainsString( '<span class="affwp-leaderboard-name">Alice</span>', $html );
+	}
+
+	/** @test */
+	public function build_html_wraps_stats_in_stats_span_not_p_tag(): void {
+		$entries   = array( $this->makeEntry( id: 1, name: 'Alice', earnings: 50.0, count: 1 ) );
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
+
+		$html = $shortcode->buildHtml( $entries, $this->range, true, true, false );
+
+		$this->assertStringContainsString( 'class="affwp-leaderboard-stats"', $html );
+		$this->assertStringNotContainsString( '<p>', $html );
+	}
+
+	// ── render: attribute flag parsing ───────────────────────────────────────
+	//
+	// These tests verify that render() correctly converts shortcode attribute
+	// strings to show/hide flags before passing them to buildHtml().  The key
+	// behaviour: anything that is NOT in the explicit "no" list is treated as
+	// "show", so stray whitespace or unexpected values never silently hide data.
+
+	/** @test */
+	public function render_hides_earnings_when_attribute_is_no(): void {
+		$this->setupRenderMocks( array( 'earnings' => 'no', 'referrals' => 'yes' ) );
+
+		$entries   = array( $this->makeEntry( id: 1, name: 'Alice', earnings: 100.0, count: 3 ) );
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
+		$html      = $shortcode->render( array() );
+
+		$this->assertStringNotContainsString( 'earnings', $html );
+		$this->assertStringContainsString( 'referrals', $html );
+	}
+
+	/** @test */
+	public function render_shows_earnings_when_attribute_is_yes(): void {
+		$this->setupRenderMocks( array( 'earnings' => 'yes', 'referrals' => 'no' ) );
+
+		$entries   = array( $this->makeEntry( id: 1, name: 'Alice', earnings: 420.50, count: 3 ) );
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
+		$html      = $shortcode->render( array() );
+
+		$this->assertStringContainsString( 'earnings', $html );
+		$this->assertStringNotContainsString( 'referrals', $html );
+	}
+
+	/** @test */
+	public function render_shows_earnings_when_attribute_has_surrounding_whitespace(): void {
+		// Page builders can inject extra whitespace around attribute values.
+		$this->setupRenderMocks( array( 'earnings' => '  yes  ', 'referrals' => 'no' ) );
+
+		$entries   = array( $this->makeEntry( id: 1, name: 'Alice', earnings: 50.0, count: 1 ) );
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
+		$html      = $shortcode->render( array() );
+
+		$this->assertStringContainsString( 'earnings', $html );
+	}
+
 	// ── helpers ───────────────────────────────────────────────────────────────
+
+	/**
+	 * Set up WP_Mock stubs needed when render() is called directly in a test.
+	 *
+	 * @param array<string,string> $attr_overrides Values to merge into the defaults returned by shortcode_atts.
+	 */
+	private function setupRenderMocks( array $attr_overrides = array() ): void {
+		$defaults = array(
+			'period'     => 'week',
+			'week_start' => 'monday',
+			'number'     => '5',
+			'orderby'    => 'earnings',
+			'order'      => 'DESC',
+			'earnings'   => 'yes',
+			'referrals'  => 'yes',
+			'status'     => 'paid,unpaid',
+			'show_label' => 'no',
+		);
+
+		WP_Mock::userFunction( 'shortcode_atts' )
+			->andReturn( array_merge( $defaults, $attr_overrides ) );
+
+		WP_Mock::userFunction( 'wp_timezone' )
+			->andReturn( new DateTimeZone( 'UTC' ) );
+
+		WP_Mock::userFunction( 'wp_kses_post' )
+			->andReturnArg( 0 );
+	}
 
 	private function makeEntry(
 		int $id,

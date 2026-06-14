@@ -7,14 +7,14 @@
 
 namespace AffiliateWPLeaderboardEnhanced\Leaderboard;
 
-use AffiliateWPLeaderboardEnhanced\WeekRange;
+use AffiliateWPLeaderboardEnhanced\DatePeriod;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * Builds a ranked list of LeaderboardEntry objects for a given WeekRange.
+ * Builds a ranked list of LeaderboardEntry objects for a given DatePeriod.
  *
  * All data access is delegated to ReferralRepositoryInterface so this class
  * contains only business logic and is fully unit-testable without WordPress.
@@ -41,7 +41,7 @@ class WeeklyLeaderboard {
 	 *   5. Sort by the requested metric and direction.
 	 *   6. Slice to the requested maximum count.
 	 *
-	 * @param WeekRange         $range    The week to score.
+	 * @param DatePeriod        $range    The week to score.
 	 * @param array<int,string> $statuses Referral statuses to include (e.g. ['paid','unpaid']).
 	 * @param int               $number   Maximum entries to return.
 	 * @param string            $orderby  Sort key: 'earnings' or 'referrals'.
@@ -49,7 +49,7 @@ class WeeklyLeaderboard {
 	 * @return list<LeaderboardEntry>
 	 */
 	public function build(
-		WeekRange $range,
+		DatePeriod $range,
 		array $statuses,
 		int $number,
 		string $orderby,
@@ -81,9 +81,19 @@ class WeeklyLeaderboard {
 		usort(
 			$entries,
 			static function ( LeaderboardEntry $a, LeaderboardEntry $b ) use ( $sort_by_referrals, $sort_desc ): int {
-				$a_val = $sort_by_referrals ? $a->referral_count : $a->earnings;
-				$b_val = $sort_by_referrals ? $b->referral_count : $b->earnings;
-				return $sort_desc ? ( $b_val <=> $a_val ) : ( $a_val <=> $b_val );
+				// Primary sort: chosen metric.
+				$a_primary = $sort_by_referrals ? $a->referral_count : $a->earnings;
+				$b_primary = $sort_by_referrals ? $b->referral_count : $b->earnings;
+				$primary   = $sort_desc ? ( $b_primary <=> $a_primary ) : ( $a_primary <=> $b_primary );
+
+				if ( 0 !== $primary ) {
+					return $primary;
+				}
+
+				// Secondary sort: the other metric as a tiebreaker, same direction.
+				$a_secondary = $sort_by_referrals ? $a->earnings : $a->referral_count;
+				$b_secondary = $sort_by_referrals ? $b->earnings : $b->referral_count;
+				return $sort_desc ? ( $b_secondary <=> $a_secondary ) : ( $a_secondary <=> $b_secondary );
 			}
 		);
 

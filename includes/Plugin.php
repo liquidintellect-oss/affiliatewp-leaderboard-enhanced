@@ -30,8 +30,8 @@ class Plugin {
 		$leaderboard = new WeeklyLeaderboard( new AffWPReferralRepository() );
 		$shortcode   = new LeaderboardShortcode( $leaderboard );
 
-		// Register the [affiliate_leaderboard_week] shortcode.
-		add_shortcode( 'affiliate_leaderboard_week', array( $shortcode, 'render' ) );
+		// Register the [affiliate_leaderboard_enhanced] shortcode.
+		add_shortcode( 'affiliate_leaderboard_enhanced', array( $shortcode, 'render' ) );
 
 		// Register the sidebar widget, passing the same shortcode instance so
 		// widget output goes through the same render path.

@@ -29,10 +29,11 @@ class LeaderboardWidgetTest extends TestCase {
 			->with(
 				Mockery::on(
 					function ( array $atts ): bool {
-						return 'wednesday' === $atts['week_start']
-						&& '8' === $atts['number']
-						&& 'referrals' === $atts['orderby']
-						&& 'paid' === $atts['status'];
+						return 'week' === $atts['period']
+							&& 'wednesday' === $atts['week_start']
+							&& '8' === $atts['number']
+							&& 'referrals' === $atts['orderby']
+							&& 'paid' === $atts['status'];
 					}
 				)
 			)
@@ -50,6 +51,7 @@ class LeaderboardWidgetTest extends TestCase {
 
 		$instance = array(
 			'title'      => 'Top Affiliates',
+			'period'     => 'week',
 			'week_start' => 'wednesday',
 			'number'     => '8',
 			'orderby'    => 'referrals',
@@ -67,7 +69,7 @@ class LeaderboardWidgetTest extends TestCase {
 	}
 
 	/** @test */
-	public function widget_uses_monday_default_when_week_start_missing(): void {
+	public function widget_passes_year_period_to_shortcode(): void {
 		WP_Mock::userFunction( 'apply_filters' )->andReturn( '' );
 
 		$shortcode = Mockery::mock( LeaderboardShortcode::class );
@@ -76,7 +78,36 @@ class LeaderboardWidgetTest extends TestCase {
 			->with(
 				Mockery::on(
 					function ( array $atts ): bool {
-						return 'monday' === $atts['week_start'];
+						return 'year' === $atts['period'];
+					}
+				)
+			)
+			->andReturn( '' );
+
+		$widget = new LeaderboardWidget( $shortcode );
+
+		ob_start();
+		$widget->widget(
+			array( 'before_widget' => '', 'after_widget' => '', 'before_title' => '', 'after_title' => '', 'id' => 'w' ),
+			array( 'period' => 'year' )
+		);
+		ob_end_clean();
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/** @test */
+	public function widget_uses_week_and_monday_defaults_when_instance_empty(): void {
+		WP_Mock::userFunction( 'apply_filters' )->andReturn( '' );
+
+		$shortcode = Mockery::mock( LeaderboardShortcode::class );
+		$shortcode->shouldReceive( 'render' )
+			->once()
+			->with(
+				Mockery::on(
+					function ( array $atts ): bool {
+						return 'week' === $atts['period']
+							&& 'monday' === $atts['week_start'];
 					}
 				)
 			)
@@ -108,6 +139,7 @@ class LeaderboardWidgetTest extends TestCase {
 		$result = $widget->update(
 			array(
 				'title'      => '<b>Alert</b>',
+				'period'     => 'week',
 				'week_start' => 'monday',
 				'number'     => '5',
 				'orderby'    => 'earnings',
@@ -120,6 +152,51 @@ class LeaderboardWidgetTest extends TestCase {
 	}
 
 	/** @test */
+	public function update_accepts_week_period(): void {
+		WP_Mock::userFunction( 'sanitize_text_field' )->andReturn( '' );
+
+		$shortcode = Mockery::mock( LeaderboardShortcode::class );
+		$widget    = new LeaderboardWidget( $shortcode );
+
+		$result = $widget->update(
+			array( 'title' => '', 'period' => 'week', 'week_start' => 'monday', 'number' => '5', 'orderby' => 'earnings', 'status' => 'paid' ),
+			array()
+		);
+
+		$this->assertSame( 'week', $result['period'] );
+	}
+
+	/** @test */
+	public function update_accepts_year_period(): void {
+		WP_Mock::userFunction( 'sanitize_text_field' )->andReturn( '' );
+
+		$shortcode = Mockery::mock( LeaderboardShortcode::class );
+		$widget    = new LeaderboardWidget( $shortcode );
+
+		$result = $widget->update(
+			array( 'title' => '', 'period' => 'year', 'week_start' => 'monday', 'number' => '5', 'orderby' => 'earnings', 'status' => 'paid' ),
+			array()
+		);
+
+		$this->assertSame( 'year', $result['period'] );
+	}
+
+	/** @test */
+	public function update_rejects_invalid_period_and_defaults_to_week(): void {
+		WP_Mock::userFunction( 'sanitize_text_field' )->andReturn( '' );
+
+		$shortcode = Mockery::mock( LeaderboardShortcode::class );
+		$widget    = new LeaderboardWidget( $shortcode );
+
+		$result = $widget->update(
+			array( 'title' => '', 'period' => 'decade', 'week_start' => 'monday', 'number' => '5', 'orderby' => 'earnings', 'status' => 'paid' ),
+			array()
+		);
+
+		$this->assertSame( 'week', $result['period'] );
+	}
+
+	/** @test */
 	public function update_rejects_invalid_week_start_and_defaults_to_monday(): void {
 		WP_Mock::userFunction( 'sanitize_text_field' )->andReturn( '' );
 
@@ -127,13 +204,7 @@ class LeaderboardWidgetTest extends TestCase {
 		$widget    = new LeaderboardWidget( $shortcode );
 
 		$result = $widget->update(
-			array(
-				'title'      => '',
-				'week_start' => 'funday',
-				'number'     => '5',
-				'orderby'    => 'earnings',
-				'status'     => 'paid,unpaid',
-			),
+			array( 'title' => '', 'period' => 'week', 'week_start' => 'funday', 'number' => '5', 'orderby' => 'earnings', 'status' => 'paid,unpaid' ),
 			array()
 		);
 
@@ -149,13 +220,7 @@ class LeaderboardWidgetTest extends TestCase {
 
 		foreach ( array( 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday' ) as $day ) {
 			$result = $widget->update(
-				array(
-					'title'      => '',
-					'week_start' => $day,
-					'number'     => '5',
-					'orderby'    => 'earnings',
-					'status'     => 'paid,unpaid',
-				),
+				array( 'title' => '', 'period' => 'week', 'week_start' => $day, 'number' => '5', 'orderby' => 'earnings', 'status' => 'paid,unpaid' ),
 				array()
 			);
 			$this->assertSame( $day, $result['week_start'], "Expected '{$day}' to be accepted" );
@@ -170,13 +235,7 @@ class LeaderboardWidgetTest extends TestCase {
 		$widget    = new LeaderboardWidget( $shortcode );
 
 		$result = $widget->update(
-			array(
-				'title'      => '',
-				'week_start' => 'monday',
-				'number'     => '-5',
-				'orderby'    => 'earnings',
-				'status'     => 'paid,unpaid',
-			),
+			array( 'title' => '', 'period' => 'week', 'week_start' => 'monday', 'number' => '-5', 'orderby' => 'earnings', 'status' => 'paid,unpaid' ),
 			array()
 		);
 
@@ -190,15 +249,8 @@ class LeaderboardWidgetTest extends TestCase {
 		$shortcode = Mockery::mock( LeaderboardShortcode::class );
 		$widget    = new LeaderboardWidget( $shortcode );
 
-		// No 'earnings' key → unchecked checkbox
 		$result = $widget->update(
-			array(
-				'title'      => '',
-				'week_start' => 'monday',
-				'number'     => '5',
-				'orderby'    => 'earnings',
-				'status'     => 'paid',
-			),
+			array( 'title' => '', 'period' => 'week', 'week_start' => 'monday', 'number' => '5', 'orderby' => 'earnings', 'status' => 'paid' ),
 			array()
 		);
 
@@ -213,14 +265,7 @@ class LeaderboardWidgetTest extends TestCase {
 		$widget    = new LeaderboardWidget( $shortcode );
 
 		$result = $widget->update(
-			array(
-				'title'      => '',
-				'week_start' => 'monday',
-				'number'     => '5',
-				'orderby'    => 'earnings',
-				'status'     => 'paid',
-				'earnings'   => 'yes',
-			),
+			array( 'title' => '', 'period' => 'week', 'week_start' => 'monday', 'number' => '5', 'orderby' => 'earnings', 'status' => 'paid', 'earnings' => 'yes' ),
 			array()
 		);
 
@@ -235,13 +280,7 @@ class LeaderboardWidgetTest extends TestCase {
 		$widget    = new LeaderboardWidget( $shortcode );
 
 		$result = $widget->update(
-			array(
-				'title'      => '',
-				'week_start' => 'monday',
-				'number'     => '5',
-				'orderby'    => 'clicks',
-				'status'     => 'paid',
-			),
+			array( 'title' => '', 'period' => 'week', 'week_start' => 'monday', 'number' => '5', 'orderby' => 'clicks', 'status' => 'paid' ),
 			array()
 		);
 
