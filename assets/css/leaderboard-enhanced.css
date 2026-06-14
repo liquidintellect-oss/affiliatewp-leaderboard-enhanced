@@ -10,7 +10,7 @@
 
 .affwp-leaderboard-enhanced-label {
     font-size: 85%;
-    color: #666;
+    color: inherit;   /* inherit from themed parent — never assume a light background */
     font-style: italic;
     margin-bottom: 0.4em;
 }
