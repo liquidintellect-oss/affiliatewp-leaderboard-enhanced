@@ -66,6 +66,30 @@
     opacity: 0.5;
 }
 
+/* ── Top-position badges ───────────────────────────────────────────────────── */
+
+/*
+ * The top 3 list items each receive a unique class so that theme authors can
+ * style them with badges, colours, icons, etc.  The declarations below are
+ * intentionally minimal — they make the positions visually distinct out of the
+ * box via font-weight only, leaving colours and badge imagery to the theme.
+ *
+ * Override any of these rules in your theme or custom CSS to add your own
+ * gold / silver / bronze treatment.
+ */
+
+.affwp-leaderboard-enhanced .affwp-leaderboard-position-1 {
+    font-weight: 700;   /* 1st place — bold */
+}
+
+.affwp-leaderboard-enhanced .affwp-leaderboard-position-2 {
+    font-weight: 600;   /* 2nd place — semi-bold */
+}
+
+.affwp-leaderboard-enhanced .affwp-leaderboard-position-3 {
+    font-weight: 500;   /* 3rd place — medium */
+}
+
 /* ── Empty state ───────────────────────────────────────────────────────────── */
 
 .affwp-leaderboard-enhanced-empty {

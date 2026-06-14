@@ -36,6 +36,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  * show_label  string  Show the period label above the list: 'yes' (default) or 'no'.
  * anonymize   string  Abbreviate affiliate last names: 'no' (default) or 'yes'.
  *                     e.g. "John Doe" becomes "John D.". Single-word names are unchanged.
+ *
+ * The rendered HTML applies position-specific CSS classes to the top 3 list items:
+ *   .affwp-leaderboard-position-1  (1st place / gold)
+ *   .affwp-leaderboard-position-2  (2nd place / silver)
+ *   .affwp-leaderboard-position-3  (3rd place / bronze)
+ * These classes are always emitted when there are enough entries — no shortcode
+ * attribute is needed.  Theme authors and page-builder users can target them with
+ * custom CSS to add badges, icons, background colours, etc.
  */
 class LeaderboardShortcode {
 
@@ -152,7 +160,9 @@ class LeaderboardShortcode {
 		if ( ! empty( $entries ) ) {
 			$html .= '<ol class="affwp-leaderboard affwp-leaderboard-enhanced">' . "\n";
 
+			$position = 0;
 			foreach ( $entries as $entry ) {
+				++$position;
 				$parts = array();
 
 				if ( $show_earnings ) {
@@ -190,7 +200,9 @@ class LeaderboardShortcode {
 				}
 
 				// Single compact line — no internal whitespace for wpautop to act on.
-				$html .= '<li>' . $name_span . $stats_span . '</li>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				// Top 3 positions receive a unique class for badge/styling customisation.
+				$position_class = $position <= 3 ? ' class="affwp-leaderboard-position-' . $position . '"' : '';
+				$html          .= '<li' . $position_class . '>' . $name_span . $stats_span . '</li>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
 
 			$html .= '</ol>' . "\n";
