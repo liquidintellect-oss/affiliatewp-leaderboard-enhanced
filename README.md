@@ -110,9 +110,9 @@ If today **is** the chosen start day, the week begins today. The window advances
 ### Output HTML
 
 ```html
-<div class="affwp-leaderboard-week-wrap">
-  <p class="affwp-leaderboard-week-label">Jun 10–16, 2026</p>
-  <ol class="affwp-leaderboard affwp-leaderboard-week">
+<div class="affwp-leaderboard-enhanced-wrap">
+  <p class="affwp-leaderboard-enhanced-label">Jun 10–16, 2026</p>
+  <ol class="affwp-leaderboard affwp-leaderboard-enhanced">
     <li>
       Jane Smith
       <p>$420.00 earnings &nbsp;|&nbsp; 7 referrals</p>
@@ -125,13 +125,13 @@ If today **is** the chosen start day, the week begins today. The window advances
 </div>
 ```
 
-The label for a year period displays as the four-digit year: `<p class="affwp-leaderboard-week-label">2026</p>`
+The label for a year period displays as the four-digit year: `<p class="affwp-leaderboard-enhanced-label">2026</p>`
 
 When no affiliate activity exists in the selected period:
 
 ```html
-<div class="affwp-leaderboard-week-wrap">
-  <p class="affwp-leaderboard-week-empty">No affiliate activity for this period.</p>
+<div class="affwp-leaderboard-enhanced-wrap">
+  <p class="affwp-leaderboard-enhanced-empty">No affiliate activity for this period.</p>
 </div>
 ```
 
@@ -155,7 +155,7 @@ Navigate to **Appearance → Widgets** (or the block-based widget editor) and ad
 | **Referral Status** | Dropdown: "Paid + Unpaid" or "Paid only" |
 | **Show Period Label** | Checkbox — show the date label above the list |
 
-The widget renders identical HTML to the shortcode, so any CSS targeting `.affwp-leaderboard-week` applies to both.
+The widget renders identical HTML to the shortcode, so any CSS targeting `.affwp-leaderboard-enhanced` applies to both.
 
 ---
 
@@ -165,23 +165,23 @@ The plugin enqueues `assets/css/leaderboard-enhanced.css` on all front-end pages
 
 | Class | Applied to |
 |---|---|
-| `.affwp-leaderboard-week-wrap` | Outer container `<div>` |
-| `.affwp-leaderboard-week-label` | Period label `<p>` |
+| `.affwp-leaderboard-enhanced-wrap` | Outer container `<div>` |
+| `.affwp-leaderboard-enhanced-label` | Period label `<p>` |
 | `.affwp-leaderboard` | The `<ol>` list (shared with original addon) |
-| `.affwp-leaderboard-week` | Additional class on the `<ol>` for specificity |
-| `.affwp-leaderboard-week-empty` | "No activity" message `<p>` |
+| `.affwp-leaderboard-enhanced` | Additional class on the `<ol>` for specificity |
+| `.affwp-leaderboard-enhanced-empty` | "No activity" message `<p>` |
 
 If the original `affiliatewp-leaderboard` addon is also active, its `.affwp-leaderboard p` styles apply here too since the `<ol>` carries the same base class.
 
 **To override styles**, add rules to your theme's stylesheet:
 
 ```css
-.affwp-leaderboard-week li {
+.affwp-leaderboard-enhanced li {
     padding: 0.5em 0;
     border-bottom: 1px solid #eee;
 }
 
-.affwp-leaderboard-week-label {
+.affwp-leaderboard-enhanced-label {
     font-weight: bold;
     color: #333;
 }

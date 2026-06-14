@@ -28,7 +28,7 @@ class LeaderboardShortcodeTest extends TestCase {
 
 		$html = $shortcode->buildHtml( array(), $this->range, true, true, false );
 
-		$this->assertStringContainsString( 'affwp-leaderboard-week-empty', $html );
+		$this->assertStringContainsString( 'affwp-leaderboard-enhanced-empty', $html );
 		$this->assertStringNotContainsString( '<ol', $html );
 	}
 
@@ -40,7 +40,7 @@ class LeaderboardShortcodeTest extends TestCase {
 
 		$html = $shortcode->buildHtml( array(), $this->range, false, false, true );
 
-		$this->assertStringContainsString( 'affwp-leaderboard-week-label', $html );
+		$this->assertStringContainsString( 'affwp-leaderboard-enhanced-label', $html );
 		$this->assertStringContainsString( 'Jun 8', $html );
 	}
 
@@ -50,7 +50,7 @@ class LeaderboardShortcodeTest extends TestCase {
 
 		$html = $shortcode->buildHtml( array(), $this->range, false, false, false );
 
-		$this->assertStringNotContainsString( 'affwp-leaderboard-week-label', $html );
+		$this->assertStringNotContainsString( 'affwp-leaderboard-enhanced-label', $html );
 	}
 
 	// ── buildHtml: entries ────────────────────────────────────────────────────
@@ -129,9 +129,31 @@ class LeaderboardShortcodeTest extends TestCase {
 
 		$html = $shortcode->buildHtml( $entries, $this->range, false, false, false );
 
-		$this->assertStringContainsString( 'affwp-leaderboard-week', $html );
+		$this->assertStringContainsString( 'affwp-leaderboard-enhanced', $html );
 		$this->assertStringContainsString( '<ol', $html );
 		$this->assertStringContainsString( '<li>', $html );
+	}
+
+	/** @test */
+	public function build_html_wraps_name_in_name_span(): void {
+		$entries   = array( $this->makeEntry( id: 1, name: 'Alice', earnings: 50.0, count: 1 ) );
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
+
+		$html = $shortcode->buildHtml( $entries, $this->range, false, false, false );
+
+		$this->assertStringContainsString( 'class="affwp-leaderboard-name"', $html );
+		$this->assertStringContainsString( '<span class="affwp-leaderboard-name">Alice</span>', $html );
+	}
+
+	/** @test */
+	public function build_html_wraps_stats_in_stats_span_not_p_tag(): void {
+		$entries   = array( $this->makeEntry( id: 1, name: 'Alice', earnings: 50.0, count: 1 ) );
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
+
+		$html = $shortcode->buildHtml( $entries, $this->range, true, true, false );
+
+		$this->assertStringContainsString( 'class="affwp-leaderboard-stats"', $html );
+		$this->assertStringNotContainsString( '<p>', $html );
 	}
 
 	// ── helpers ───────────────────────────────────────────────────────────────

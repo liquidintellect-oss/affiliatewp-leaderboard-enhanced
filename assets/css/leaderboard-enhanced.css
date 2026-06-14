@@ -1,25 +1,96 @@
 /* AffiliateWP Leaderboard Enhanced — front-end styles */
 
-.affwp-leaderboard-week-wrap {
+/* ── Outer wrapper ─────────────────────────────────────────────────────────── */
+
+.affwp-leaderboard-enhanced-wrap {
     margin: 0 0 1em;
 }
 
-.affwp-leaderboard-week-label {
+/* ── Period label ──────────────────────────────────────────────────────────── */
+
+.affwp-leaderboard-enhanced-label {
     font-size: 85%;
     color: #666;
     font-style: italic;
     margin-bottom: 0.4em;
 }
 
-/* Inherits list styling from the base .affwp-leaderboard class output by the
-   original leaderboard addon, but scoped so we can add specificity if needed. */
-.affwp-leaderboard.affwp-leaderboard-week p {
-    font-size: 80%;
-    color: #999;
+/* ── List ──────────────────────────────────────────────────────────────────── */
+
+/*
+ * The base .affwp-leaderboard class is shared with the original
+ * affiliatewp-leaderboard addon. The .affwp-leaderboard-enhanced class scopes
+ * rules to this plugin so there is no bleed into the original.
+ */
+
+.affwp-leaderboard.affwp-leaderboard-enhanced {
+    list-style: none;
+    padding: 0;
+    margin: 0;
 }
 
-.affwp-leaderboard-week-empty {
+/* ── List rows ─────────────────────────────────────────────────────────────── */
+
+/*
+ * Each <li> is a flex row: affiliate name on the left, stats on the right.
+ * align-items: center keeps them vertically centred when one wraps.
+ */
+
+.affwp-leaderboard-enhanced li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1em;
+}
+
+/* ── Name (left child) ─────────────────────────────────────────────────────── */
+
+.affwp-leaderboard-name {
+    flex: 1 1 auto;   /* grow to fill; shrinks before stats do */
+    min-width: 0;     /* allows long names to truncate rather than overflow */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Stats (right child) ───────────────────────────────────────────────────── */
+
+.affwp-leaderboard-stats {
+    flex: 0 0 auto;   /* fixed width — does not shrink or grow */
+    white-space: nowrap;
+    font-size: 85%;
+    color: inherit;   /* inherit from parent so themed colours apply */
+}
+
+.affwp-leaderboard-stats .divider {
+    opacity: 0.5;
+}
+
+/* ── Empty state ───────────────────────────────────────────────────────────── */
+
+.affwp-leaderboard-enhanced-empty {
     font-size: 85%;
     color: #999;
     font-style: italic;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+    /*
+     * On very small screens stack name above stats and centre both.
+     * The Elementor wrapper already handles 768px breakpoint;
+     * this only kicks in below 480px.
+     */
+    .affwp-leaderboard-enhanced li {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.2em;
+    }
+
+    .affwp-leaderboard-name {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+    }
 }

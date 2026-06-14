@@ -117,15 +117,15 @@ class LeaderboardShortcode {
 	): string {
 		ob_start();
 		?>
-		<div class="affwp-leaderboard-week-wrap">
+		<div class="affwp-leaderboard-enhanced-wrap">
 		<?php if ( $show_label ) : ?>
-			<p class="affwp-leaderboard-week-label"><?php echo esc_html( $range->label ); ?></p>
+			<p class="affwp-leaderboard-enhanced-label"><?php echo esc_html( $range->label ); ?></p>
 		<?php endif; ?>
 		<?php if ( ! empty( $entries ) ) : ?>
-			<ol class="affwp-leaderboard affwp-leaderboard-week">
+			<ol class="affwp-leaderboard affwp-leaderboard-enhanced">
 			<?php foreach ( $entries as $entry ) : ?>
 				<li>
-					<?php echo esc_html( $entry->affiliate_name ); ?>
+					<span class="affwp-leaderboard-name"><?php echo esc_html( $entry->affiliate_name ); ?></span>
 					<?php
 					$parts = array();
 
@@ -143,13 +143,13 @@ class LeaderboardShortcode {
 						$sep    = '&nbsp;&nbsp;<span class="divider">|</span>&nbsp;&nbsp;';
 						$detail = implode( $sep, $parts );
 						?>
-						<p><?php echo wp_kses_post( $detail ); ?></p>
+						<span class="affwp-leaderboard-stats"><?php echo wp_kses_post( $detail ); ?></span>
 					<?php endif; ?>
 				</li>
 			<?php endforeach; ?>
 			</ol>
 		<?php else : ?>
-			<p class="affwp-leaderboard-week-empty">
+			<p class="affwp-leaderboard-enhanced-empty">
 				<?php esc_html_e( 'No affiliate activity for this period.', 'affiliatewp-leaderboard-enhanced' ); ?>
 			</p>
 		<?php endif; ?>
