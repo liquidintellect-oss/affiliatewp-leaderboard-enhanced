@@ -38,6 +38,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 class LeaderboardShortcode {
 
 	/**
+	 * Attribute values that mean "do not show".
+	 *
+	 * Everything else (including the default 'yes', 'on', '1', or any unexpected
+	 * value a page-builder might inject) is treated as "show".
+	 *
+	 * @var list<string>
+	 */
+	private const NO_VALUES = array( 'no', 'false', '0', '' );
+
+	/**
 	 * Constructor.
 	 *
 	 * @param WeeklyLeaderboard $leaderboard Leaderboard service.
@@ -70,7 +80,7 @@ class LeaderboardShortcode {
 		);
 
 		$now    = new \DateTimeImmutable( 'now', wp_timezone() );
-		$period = strtolower( $atts['period'] );
+		$period = strtolower( trim( (string) $atts['period'] ) );
 
 		if ( 'year' === $period ) {
 			$range = DatePeriod::forCurrentYear( $now );
@@ -86,9 +96,12 @@ class LeaderboardShortcode {
 			: 'earnings';
 		$order    = 'ASC' === strtoupper( $atts['order'] ) ? 'ASC' : 'DESC';
 
-		$show_earnings  = 'yes' === strtolower( $atts['earnings'] );
-		$show_referrals = 'yes' === strtolower( $atts['referrals'] );
-		$show_label     = 'yes' === strtolower( $atts['show_label'] );
+		// Normalise boolean flags. Treat anything that is not an explicit "no"
+		// as "yes" so that page-builder quote handling or extra whitespace never
+		// silently disables a column.
+		$show_earnings  = ! in_array( strtolower( trim( (string) $atts['earnings'] ) ), self::NO_VALUES, true );
+		$show_referrals = ! in_array( strtolower( trim( (string) $atts['referrals'] ) ), self::NO_VALUES, true );
+		$show_label     = ! in_array( strtolower( trim( (string) $atts['show_label'] ) ), self::NO_VALUES, true );
 
 		$entries = $this->leaderboard->build( $range, $statuses, $number, $orderby, $order );
 
@@ -100,6 +113,12 @@ class LeaderboardShortcode {
 	 *
 	 * Kept as a separate public method so unit tests can exercise the rendering
 	 * logic without needing to mock the full WordPress + AffiliateWP stack.
+	 *
+	 * HTML is built by string concatenation rather than a mixed PHP/HTML
+	 * template so that each <li> is a single compact line with no internal
+	 * whitespace.  This prevents Elementor (and any other host that runs
+	 * wpautop on shortcode output) from injecting spurious <p></p> tags
+	 * into the list items.
 	 *
 	 * @param array<int,LeaderboardEntry> $entries        Ranked affiliate entries.
 	 * @param DatePeriod                  $range          The date period (for the label).
@@ -115,46 +134,59 @@ class LeaderboardShortcode {
 		bool $show_referrals,
 		bool $show_label
 	): string {
-		ob_start();
-		?>
-		<div class="affwp-leaderboard-enhanced-wrap">
-		<?php if ( $show_label ) : ?>
-			<p class="affwp-leaderboard-enhanced-label"><?php echo esc_html( $range->label ); ?></p>
-		<?php endif; ?>
-		<?php if ( ! empty( $entries ) ) : ?>
-			<ol class="affwp-leaderboard affwp-leaderboard-enhanced">
-			<?php foreach ( $entries as $entry ) : ?>
-				<li>
-					<span class="affwp-leaderboard-name"><?php echo esc_html( $entry->affiliate_name ); ?></span>
-					<?php
-					$parts = array();
+		$sep  = '&nbsp;&nbsp;<span class="divider">|</span>&nbsp;&nbsp;';
+		$html = '<div class="affwp-leaderboard-enhanced-wrap">' . "\n";
 
-					if ( $show_earnings ) {
-						$parts[] = affwp_currency_filter( affwp_format_amount( $entry->earnings ) )
-							. ' ' . esc_html__( 'earnings', 'affiliatewp-leaderboard-enhanced' );
-					}
+		if ( $show_label ) {
+			$html .= '<p class="affwp-leaderboard-enhanced-label">'
+				. esc_html( $range->label )
+				. '</p>' . "\n";
+		}
 
-					if ( $show_referrals ) {
-						$parts[] = absint( $entry->referral_count )
-							. ' ' . esc_html__( 'referrals', 'affiliatewp-leaderboard-enhanced' );
-					}
+		if ( ! empty( $entries ) ) {
+			$html .= '<ol class="affwp-leaderboard affwp-leaderboard-enhanced">' . "\n";
 
-					if ( ! empty( $parts ) ) :
-						$sep    = '&nbsp;&nbsp;<span class="divider">|</span>&nbsp;&nbsp;';
-						$detail = implode( $sep, $parts );
-						?>
-						<span class="affwp-leaderboard-stats"><?php echo wp_kses_post( $detail ); ?></span>
-					<?php endif; ?>
-				</li>
-			<?php endforeach; ?>
-			</ol>
-		<?php else : ?>
-			<p class="affwp-leaderboard-enhanced-empty">
-				<?php esc_html_e( 'No affiliate activity for this period.', 'affiliatewp-leaderboard-enhanced' ); ?>
-			</p>
-		<?php endif; ?>
-		</div>
-		<?php
-		return (string) ob_get_clean();
+			foreach ( $entries as $entry ) {
+				$parts = array();
+
+				if ( $show_earnings ) {
+					// wp_kses_post sanitises the currency output before it enters the
+					// parts array so that later implode/concatenation stays safe.
+					$parts[] = wp_kses_post( affwp_currency_filter( affwp_format_amount( $entry->earnings ) ) )
+						. ' ' . esc_html__( 'earnings', 'affiliatewp-leaderboard-enhanced' );
+				}
+
+				if ( $show_referrals ) {
+					$parts[] = absint( $entry->referral_count )
+						. ' ' . esc_html__( 'referrals', 'affiliatewp-leaderboard-enhanced' );
+				}
+
+				$name_span = '<span class="affwp-leaderboard-name">'
+					. esc_html( $entry->affiliate_name )
+					. '</span>';
+
+				$stats_span = '';
+				if ( ! empty( $parts ) ) {
+					$stats_span = '<span class="affwp-leaderboard-stats">'
+						. implode( $sep, $parts )
+						. '</span>';
+				}
+
+				// One compact line per <li> — wpautop only inserts <p></p> for
+				// whitespace/newlines it finds inside block elements.  A single
+				// unbroken line gives it nothing to act on.
+				$html .= '<li>' . wp_kses_post( $name_span . $stats_span ) . '</li>' . "\n";
+			}
+
+			$html .= '</ol>' . "\n";
+		} else {
+			$html .= '<p class="affwp-leaderboard-enhanced-empty">'
+				. esc_html__( 'No affiliate activity for this period.', 'affiliatewp-leaderboard-enhanced' )
+				. '</p>' . "\n";
+		}
+
+		$html .= '</div>';
+
+		return $html;
 	}
 }

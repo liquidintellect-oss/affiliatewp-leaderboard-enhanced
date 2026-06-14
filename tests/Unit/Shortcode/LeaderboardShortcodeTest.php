@@ -156,7 +156,78 @@ class LeaderboardShortcodeTest extends TestCase {
 		$this->assertStringNotContainsString( '<p>', $html );
 	}
 
+	// ── render: attribute flag parsing ───────────────────────────────────────
+	//
+	// These tests verify that render() correctly converts shortcode attribute
+	// strings to show/hide flags before passing them to buildHtml().  The key
+	// behaviour: anything that is NOT in the explicit "no" list is treated as
+	// "show", so stray whitespace or unexpected values never silently hide data.
+
+	/** @test */
+	public function render_hides_earnings_when_attribute_is_no(): void {
+		$this->setupRenderMocks( array( 'earnings' => 'no', 'referrals' => 'yes' ) );
+
+		$entries   = array( $this->makeEntry( id: 1, name: 'Alice', earnings: 100.0, count: 3 ) );
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
+		$html      = $shortcode->render( array() );
+
+		$this->assertStringNotContainsString( 'earnings', $html );
+		$this->assertStringContainsString( 'referrals', $html );
+	}
+
+	/** @test */
+	public function render_shows_earnings_when_attribute_is_yes(): void {
+		$this->setupRenderMocks( array( 'earnings' => 'yes', 'referrals' => 'no' ) );
+
+		$entries   = array( $this->makeEntry( id: 1, name: 'Alice', earnings: 420.50, count: 3 ) );
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
+		$html      = $shortcode->render( array() );
+
+		$this->assertStringContainsString( 'earnings', $html );
+		$this->assertStringNotContainsString( 'referrals', $html );
+	}
+
+	/** @test */
+	public function render_shows_earnings_when_attribute_has_surrounding_whitespace(): void {
+		// Page builders can inject extra whitespace around attribute values.
+		$this->setupRenderMocks( array( 'earnings' => '  yes  ', 'referrals' => 'no' ) );
+
+		$entries   = array( $this->makeEntry( id: 1, name: 'Alice', earnings: 50.0, count: 1 ) );
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
+		$html      = $shortcode->render( array() );
+
+		$this->assertStringContainsString( 'earnings', $html );
+	}
+
 	// ── helpers ───────────────────────────────────────────────────────────────
+
+	/**
+	 * Set up WP_Mock stubs needed when render() is called directly in a test.
+	 *
+	 * @param array<string,string> $attr_overrides Values to merge into the defaults returned by shortcode_atts.
+	 */
+	private function setupRenderMocks( array $attr_overrides = array() ): void {
+		$defaults = array(
+			'period'     => 'week',
+			'week_start' => 'monday',
+			'number'     => '5',
+			'orderby'    => 'earnings',
+			'order'      => 'DESC',
+			'earnings'   => 'yes',
+			'referrals'  => 'yes',
+			'status'     => 'paid,unpaid',
+			'show_label' => 'no',
+		);
+
+		WP_Mock::userFunction( 'shortcode_atts' )
+			->andReturn( array_merge( $defaults, $attr_overrides ) );
+
+		WP_Mock::userFunction( 'wp_timezone' )
+			->andReturn( new DateTimeZone( 'UTC' ) );
+
+		WP_Mock::userFunction( 'wp_kses_post' )
+			->andReturnArg( 0 );
+	}
 
 	private function makeEntry(
 		int $id,
