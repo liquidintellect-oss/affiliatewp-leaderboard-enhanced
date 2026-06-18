@@ -79,10 +79,57 @@ class AffWPReferralRepository implements ReferralRepositoryInterface {
 	/**
 	 * Return the display name for the given affiliate.
 	 *
+	 * Falls back to the WordPress username and then to the email local-part
+	 * (everything before the `@`) when the affiliate has no first or last name.
+	 *
 	 * @param int $affiliate_id AffiliateWP affiliate ID.
 	 * @return string
 	 */
 	public function getAffiliateName( int $affiliate_id ): string {
-		return (string) affiliate_wp()->affiliates->get_affiliate_name( $affiliate_id );
+		$name = (string) affiliate_wp()->affiliates->get_affiliate_name( $affiliate_id );
+
+		if ( '' !== $name ) {
+			return $name;
+		}
+
+		$affiliate = affwp_get_affiliate( $affiliate_id );
+		$user      = $affiliate ? get_userdata( $affiliate->user_id ) : false;
+
+		return self::resolveAffiliateName( $name, $user ? $user : null );
+	}
+
+	/**
+	 * Resolve the best available display name given the raw name and WP user.
+	 *
+	 * Priority:
+	 *   1. $name, if non-empty (already handled by the caller, but kept for completeness).
+	 *   2. WP user_login.
+	 *   3. Everything before the `@` in WP user_email.
+	 *   4. Empty string as a last resort.
+	 *
+	 * Extracted as a public static method so it can be unit-tested without a
+	 * live WordPress or AffiliateWP installation.
+	 *
+	 * @param string        $name The affiliate's first+last name (may be empty).
+	 * @param \WP_User|null $user The affiliate's WordPress user record, or null.
+	 * @return string
+	 */
+	public static function resolveAffiliateName( string $name, ?\WP_User $user ): string {
+		if ( '' !== $name ) {
+			return $name;
+		}
+
+		if ( null !== $user && '' !== $user->user_login ) {
+			return $user->user_login;
+		}
+
+		if ( null !== $user && '' !== $user->user_email ) {
+			$local = strstr( $user->user_email, '@', true );
+			if ( false !== $local && '' !== $local ) {
+				return $local;
+			}
+		}
+
+		return '';
 	}
 }
