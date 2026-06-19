@@ -94,4 +94,22 @@ class AffWPReferralRepositoryTest extends TestCase {
 
 		$this->assertSame( 'myusername', $result );
 	}
+
+	/** @test */
+	public function strips_domain_from_user_login_when_login_is_an_email_address(): void {
+		$user = new WP_User( 'jsmith@example.com', 'jsmith@example.com' );
+
+		$result = AffWPReferralRepository::resolveAffiliateName( '', $user );
+
+		$this->assertSame( 'jsmith', $result );
+	}
+
+	/** @test */
+	public function leaves_plain_username_unchanged_when_it_contains_no_at_sign(): void {
+		$user = new WP_User( 'jsmith', '' );
+
+		$result = AffWPReferralRepository::resolveAffiliateName( '', $user );
+
+		$this->assertSame( 'jsmith', $result );
+	}
 }
