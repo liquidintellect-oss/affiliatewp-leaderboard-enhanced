@@ -79,10 +79,75 @@ class AffWPReferralRepository implements ReferralRepositoryInterface {
 	/**
 	 * Return the display name for the given affiliate.
 	 *
+	 * Falls back to the WordPress username and then to the email local-part
+	 * (everything before the `@`) when the affiliate has no first or last name.
+	 *
 	 * @param int $affiliate_id AffiliateWP affiliate ID.
 	 * @return string
 	 */
 	public function getAffiliateName( int $affiliate_id ): string {
-		return (string) affiliate_wp()->affiliates->get_affiliate_name( $affiliate_id );
+		$name = (string) affiliate_wp()->affiliates->get_affiliate_name( $affiliate_id );
+
+		if ( '' !== $name ) {
+			return $name;
+		}
+
+		$affiliate = affwp_get_affiliate( $affiliate_id );
+		$user      = $affiliate ? get_userdata( $affiliate->user_id ) : false;
+
+		return self::resolveAffiliateName( $name, $user ? $user : null );
+	}
+
+	/**
+	 * Resolve the best available display name given the raw name and WP user.
+	 *
+	 * Priority:
+	 *   1. $name, if non-empty (already handled by the caller, but kept for completeness).
+	 *   2. WP user_login, with any `@domain` suffix stripped.
+	 *   3. WP user_email, with the `@domain` suffix stripped.
+	 *   4. Empty string as a last resort.
+	 *
+	 * The `@domain` strip is applied to both user_login and user_email because
+	 * WordPress sites commonly configure user_login as an email address.
+	 *
+	 * Extracted as a public static method so it can be unit-tested without a
+	 * live WordPress or AffiliateWP installation.
+	 *
+	 * @param string        $name The affiliate's first+last name (may be empty).
+	 * @param \WP_User|null $user The affiliate's WordPress user record, or null.
+	 * @return string
+	 */
+	public static function resolveAffiliateName( string $name, ?\WP_User $user ): string {
+		if ( '' !== $name ) {
+			return $name;
+		}
+
+		if ( null !== $user && '' !== $user->user_login ) {
+			return self::stripEmailDomain( $user->user_login );
+		}
+
+		if ( null !== $user && '' !== $user->user_email ) {
+			return self::stripEmailDomain( $user->user_email );
+		}
+
+		return '';
+	}
+
+	/**
+	 * Strip the `@domain` portion from a string if it contains an `@` sign.
+	 *
+	 * Returns the value unchanged when no `@` is present (i.e. a plain username).
+	 *
+	 * @param string $value A username or email address.
+	 * @return string
+	 */
+	private static function stripEmailDomain( string $value ): string {
+		if ( false === strpos( $value, '@' ) ) {
+			return $value;
+		}
+
+		$local = strstr( $value, '@', true );
+
+		return ( false !== $local && '' !== $local ) ? $local : $value;
 	}
 }
