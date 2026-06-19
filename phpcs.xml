@@ -185,9 +185,11 @@
     </rule>
 
     <!--
-        strip_tags() in test-only sanitize stubs is fine.
+        strip_tags() in test-only sanitize stubs is fine, and json_encode() is
+        acceptable in test helpers (e.g. mocking wp_json_encode return values).
     -->
     <rule ref="WordPress.WP.AlternativeFunctions">
         <exclude-pattern>tests/bootstrap.php</exclude-pattern>
+        <exclude-pattern>tests/*</exclude-pattern>
     </rule>
 </ruleset>
