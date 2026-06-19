@@ -301,57 +301,169 @@ class LeaderboardShortcodeTest extends TestCase {
 		$this->assertStringNotContainsString( 'affwp-leaderboard-position-3', $html );
 	}
 
-	// ── render: attribute flag parsing ───────────────────────────────────────
+	// ── render: AJAX wrapper output ──────────────────────────────────────────
 	//
-	// These tests verify that render() correctly converts shortcode attribute
-	// strings to show/hide flags before passing them to buildHtml().  The key
-	// behaviour: anything that is NOT in the explicit "no" list is treated as
-	// "show", so stray whitespace or unexpected values never silently hide data.
+	// render() now outputs an empty wrapper div with data attributes that the
+	// companion JS uses to fire background AJAX requests.  Content is no longer
+	// rendered server-side by render() — see the renderContent() tests below.
 
 	/** @test */
-	public function render_hides_earnings_when_attribute_is_no(): void {
-		$this->setupRenderMocks( array( 'earnings' => 'no', 'referrals' => 'yes' ) );
+	public function render_outputs_wrapper_with_data_params_attribute(): void {
+		$this->setupRenderWrapperMocks();
+
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( array() ) );
+		$html      = $shortcode->render( array() );
+
+		$this->assertStringContainsString( 'data-affwp-lbe-params', $html );
+	}
+
+	/** @test */
+	public function render_outputs_wrapper_with_data_refresh_attribute(): void {
+		$this->setupRenderWrapperMocks();
+
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( array() ) );
+		$html      = $shortcode->render( array() );
+
+		$this->assertStringContainsString( 'data-affwp-lbe-refresh', $html );
+	}
+
+	/** @test */
+	public function render_wrapper_is_empty_on_initial_page_load(): void {
+		$this->setupRenderWrapperMocks();
+
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( array() ) );
+		$html      = $shortcode->render( array() );
+
+		$this->assertStringNotContainsString( '<ol', $html );
+		$this->assertStringNotContainsString( '<p', $html );
+	}
+
+	/** @test */
+	public function render_refresh_interval_defaults_to_zero(): void {
+		$this->setupRenderWrapperMocks();
+
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( array() ) );
+		$html      = $shortcode->render( array() );
+
+		$this->assertStringContainsString( 'data-affwp-lbe-refresh="0"', $html );
+	}
+
+	/** @test */
+	public function render_encodes_refresh_interval_in_data_attribute(): void {
+		$this->setupRenderWrapperMocks( array( 'refresh_interval' => '30' ) );
+
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( array() ) );
+		$html      = $shortcode->render( array() );
+
+		$this->assertStringContainsString( 'data-affwp-lbe-refresh="30"', $html );
+	}
+
+	/** @test */
+	public function render_encodes_period_in_data_params(): void {
+		$this->setupRenderWrapperMocks( array( 'period' => 'year' ) );
+
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( array() ) );
+		$html      = $shortcode->render( array() );
+
+		$this->assertStringContainsString( 'year', $html );
+	}
+
+	// ── renderContent: attribute flag parsing ─────────────────────────────────
+	//
+	// These tests verify that renderContent() correctly converts shortcode
+	// attribute strings to show/hide flags before querying and rendering.
+	// The key behaviour: anything that is NOT in the explicit "no" list is
+	// treated as "show", so stray whitespace or unexpected values never silently
+	// hide data.
+
+	/** @test */
+	public function render_content_hides_earnings_when_attribute_is_no(): void {
+		$this->setupRenderContentMocks( array( 'earnings' => 'no', 'referrals' => 'yes' ) );
 
 		$entries   = array( $this->makeEntry( id: 1, name: 'Alice', earnings: 100.0, count: 3 ) );
 		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
-		$html      = $shortcode->render( array() );
+		$html      = $shortcode->renderContent( array() );
 
 		$this->assertStringNotContainsString( 'earnings', $html );
 		$this->assertStringContainsString( 'referrals', $html );
 	}
 
 	/** @test */
-	public function render_shows_earnings_when_attribute_is_yes(): void {
-		$this->setupRenderMocks( array( 'earnings' => 'yes', 'referrals' => 'no' ) );
+	public function render_content_shows_earnings_when_attribute_is_yes(): void {
+		$this->setupRenderContentMocks( array( 'earnings' => 'yes', 'referrals' => 'no' ) );
 
 		$entries   = array( $this->makeEntry( id: 1, name: 'Alice', earnings: 420.50, count: 3 ) );
 		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
-		$html      = $shortcode->render( array() );
+		$html      = $shortcode->renderContent( array() );
 
 		$this->assertStringContainsString( 'earnings', $html );
 		$this->assertStringNotContainsString( 'referrals', $html );
 	}
 
 	/** @test */
-	public function render_shows_earnings_when_attribute_has_surrounding_whitespace(): void {
+	public function render_content_shows_earnings_when_attribute_has_surrounding_whitespace(): void {
 		// Page builders can inject extra whitespace around attribute values.
-		$this->setupRenderMocks( array( 'earnings' => '  yes  ', 'referrals' => 'no' ) );
+		$this->setupRenderContentMocks( array( 'earnings' => '  yes  ', 'referrals' => 'no' ) );
 
 		$entries   = array( $this->makeEntry( id: 1, name: 'Alice', earnings: 50.0, count: 1 ) );
 		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
-		$html      = $shortcode->render( array() );
+		$html      = $shortcode->renderContent( array() );
 
 		$this->assertStringContainsString( 'earnings', $html );
+	}
+
+	/** @test */
+	public function render_content_returns_inner_html_without_outer_wrapper(): void {
+		$this->setupRenderContentMocks();
+
+		$entries   = array( $this->makeEntry( id: 1, name: 'Alice', earnings: 50.0, count: 1 ) );
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( $entries ) );
+		$html      = $shortcode->renderContent( array() );
+
+		$this->assertStringNotContainsString( 'affwp-leaderboard-enhanced-wrap', $html );
+		$this->assertStringContainsString( '<ol', $html );
 	}
 
 	// ── helpers ───────────────────────────────────────────────────────────────
 
 	/**
 	 * Set up WP_Mock stubs needed when render() is called directly in a test.
+	 * render() outputs an AJAX wrapper and calls wp_json_encode + esc_attr.
 	 *
 	 * @param array<string,string> $attr_overrides Values to merge into the defaults returned by shortcode_atts.
 	 */
-	private function setupRenderMocks( array $attr_overrides = array() ): void {
+	private function setupRenderWrapperMocks( array $attr_overrides = array() ): void {
+		$defaults = array(
+			'period'           => 'week',
+			'week_start'       => 'monday',
+			'number'           => '10',
+			'orderby'          => 'earnings',
+			'order'            => 'DESC',
+			'earnings'         => 'yes',
+			'referrals'        => 'yes',
+			'status'           => 'paid,unpaid',
+			'show_label'       => 'yes',
+			'anonymize'        => 'no',
+			'refresh_interval' => '0',
+		);
+
+		WP_Mock::userFunction( 'shortcode_atts' )
+			->andReturn( array_merge( $defaults, $attr_overrides ) );
+
+		WP_Mock::userFunction( 'wp_json_encode' )
+			->andReturnUsing(
+				function ( $value ) {
+					return (string) json_encode( $value );
+				}
+			);
+	}
+
+	/**
+	 * Set up WP_Mock stubs needed when renderContent() is called directly in a test.
+	 *
+	 * @param array<string,string> $attr_overrides Values to merge into the defaults returned by shortcode_atts.
+	 */
+	private function setupRenderContentMocks( array $attr_overrides = array() ): void {
 		$defaults = array(
 			'period'     => 'week',
 			'week_start' => 'monday',
@@ -373,6 +485,16 @@ class LeaderboardShortcodeTest extends TestCase {
 
 		WP_Mock::userFunction( 'wp_kses_post' )
 			->andReturnArg( 0 );
+	}
+
+	/**
+	 * @deprecated Use setupRenderContentMocks() for renderContent() tests.
+	 *             Kept as an alias so any test that still calls it resolves.
+	 *
+	 * @param array<string,string> $attr_overrides
+	 */
+	private function setupRenderMocks( array $attr_overrides = array() ): void {
+		$this->setupRenderContentMocks( $attr_overrides );
 	}
 
 	private function makeEntry(

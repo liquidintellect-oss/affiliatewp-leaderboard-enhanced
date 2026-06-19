@@ -58,16 +58,17 @@ class LeaderboardWidget extends \WP_Widget {
 		// attribute strings, not raw output — they are validated inside render().
 		echo $this->shortcode->render(
 			array(
-				'period'     => $instance['period'] ?? 'week',
-				'week_start' => $instance['week_start'] ?? 'monday',
-				'number'     => $instance['number'] ?? '5',
-				'orderby'    => $instance['orderby'] ?? 'earnings',
-				'order'      => 'DESC',
-				'earnings'   => $instance['earnings'] ?? 'yes',
-				'referrals'  => $instance['referrals'] ?? 'yes',
-				'status'     => $instance['status'] ?? 'paid,unpaid',
-				'show_label' => $instance['show_label'] ?? 'yes',
-				'anonymize'  => $instance['anonymize'] ?? 'no',
+				'period'           => $instance['period'] ?? 'week',
+				'week_start'       => $instance['week_start'] ?? 'monday',
+				'number'           => $instance['number'] ?? '5',
+				'orderby'          => $instance['orderby'] ?? 'earnings',
+				'order'            => 'DESC',
+				'earnings'         => $instance['earnings'] ?? 'yes',
+				'referrals'        => $instance['referrals'] ?? 'yes',
+				'status'           => $instance['status'] ?? 'paid,unpaid',
+				'show_label'       => $instance['show_label'] ?? 'yes',
+				'anonymize'        => $instance['anonymize'] ?? 'no',
+				'refresh_interval' => (string) ( $instance['refresh_interval'] ?? '0' ),
 			)
 		);
 		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -83,16 +84,17 @@ class LeaderboardWidget extends \WP_Widget {
 	 */
 	public function form( $instance ): string { // phpcs:ignore WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid
 		$defaults = array(
-			'title'      => esc_html__( 'Top Affiliates', 'affiliatewp-leaderboard-enhanced' ),
-			'period'     => 'week',
-			'week_start' => 'monday',
-			'number'     => '5',
-			'orderby'    => 'earnings',
-			'earnings'   => 'yes',
-			'referrals'  => 'yes',
-			'status'     => 'paid,unpaid',
-			'show_label' => 'yes',
-			'anonymize'  => 'no',
+			'title'            => esc_html__( 'Top Affiliates', 'affiliatewp-leaderboard-enhanced' ),
+			'period'           => 'week',
+			'week_start'       => 'monday',
+			'number'           => '5',
+			'orderby'          => 'earnings',
+			'earnings'         => 'yes',
+			'referrals'        => 'yes',
+			'status'           => 'paid,unpaid',
+			'show_label'       => 'yes',
+			'anonymize'        => 'no',
+			'refresh_interval' => '0',
 		);
 
 		$instance = wp_parse_args( (array) $instance, $defaults );
@@ -260,6 +262,21 @@ class LeaderboardWidget extends \WP_Widget {
 			</label>
 		</p>
 
+		<!-- Refresh Interval -->
+		<p>
+			<label for="<?php echo esc_attr( $this->get_field_id( 'refresh_interval' ) ); ?>">
+				<?php esc_html_e( 'Refresh Interval (seconds):', 'affiliatewp-leaderboard-enhanced' ); ?>
+			</label>
+			<input class="widefat"
+				id="<?php echo esc_attr( $this->get_field_id( 'refresh_interval' ) ); ?>"
+				name="<?php echo esc_attr( $this->get_field_name( 'refresh_interval' ) ); ?>"
+				type="number"
+				min="0"
+				step="1"
+				value="<?php echo esc_attr( (string) $instance['refresh_interval'] ); ?>" />
+			<small><?php esc_html_e( 'Set to 0 to disable automatic refresh.', 'affiliatewp-leaderboard-enhanced' ); ?></small>
+		</p>
+
 		<?php
 		return '';
 	}
@@ -278,24 +295,25 @@ class LeaderboardWidget extends \WP_Widget {
 		$valid_statuses = array( 'paid,unpaid', 'paid' );
 
 		return array(
-			'title'      => sanitize_text_field( $new_instance['title'] ?? '' ),
-			'period'     => in_array( $new_instance['period'] ?? '', $valid_periods, true )
+			'title'            => sanitize_text_field( $new_instance['title'] ?? '' ),
+			'period'           => in_array( $new_instance['period'] ?? '', $valid_periods, true )
 				? $new_instance['period']
 				: 'week',
-			'week_start' => in_array( $new_instance['week_start'] ?? '', $valid_days, true )
+			'week_start'       => in_array( $new_instance['week_start'] ?? '', $valid_days, true )
 				? $new_instance['week_start']
 				: 'monday',
-			'number'     => max( 1, (int) ( $new_instance['number'] ?? 10 ) ),
-			'orderby'    => in_array( $new_instance['orderby'] ?? '', $valid_orderbys, true )
+			'number'           => max( 1, (int) ( $new_instance['number'] ?? 10 ) ),
+			'orderby'          => in_array( $new_instance['orderby'] ?? '', $valid_orderbys, true )
 				? $new_instance['orderby']
 				: 'earnings',
-			'earnings'   => isset( $new_instance['earnings'] ) ? 'yes' : 'no',
-			'referrals'  => isset( $new_instance['referrals'] ) ? 'yes' : 'no',
-			'status'     => in_array( $new_instance['status'] ?? '', $valid_statuses, true )
+			'earnings'         => isset( $new_instance['earnings'] ) ? 'yes' : 'no',
+			'referrals'        => isset( $new_instance['referrals'] ) ? 'yes' : 'no',
+			'status'           => in_array( $new_instance['status'] ?? '', $valid_statuses, true )
 				? $new_instance['status']
 				: 'paid,unpaid',
-			'show_label' => isset( $new_instance['show_label'] ) ? 'yes' : 'no',
-			'anonymize'  => isset( $new_instance['anonymize'] ) ? 'yes' : 'no',
+			'show_label'       => isset( $new_instance['show_label'] ) ? 'yes' : 'no',
+			'anonymize'        => isset( $new_instance['anonymize'] ) ? 'yes' : 'no',
+			'refresh_interval' => max( 0, (int) ( $new_instance['refresh_interval'] ?? 0 ) ),
 		);
 	}
 }

@@ -344,4 +344,107 @@ class LeaderboardWidgetTest extends TestCase {
 
 		$this->assertSame( 'earnings', $result['orderby'] );
 	}
+
+	// ── refresh_interval ──────────────────────────────────────────────────────
+
+	/** @test */
+	public function update_saves_positive_refresh_interval(): void {
+		WP_Mock::userFunction( 'sanitize_text_field' )->andReturn( '' );
+
+		$shortcode = Mockery::mock( LeaderboardShortcode::class );
+		$widget    = new LeaderboardWidget( $shortcode );
+
+		$result = $widget->update(
+			array( 'title' => '', 'period' => 'week', 'week_start' => 'monday', 'number' => '5', 'orderby' => 'earnings', 'status' => 'paid', 'refresh_interval' => '30' ),
+			array()
+		);
+
+		$this->assertSame( 30, $result['refresh_interval'] );
+	}
+
+	/** @test */
+	public function update_clamps_negative_refresh_interval_to_zero(): void {
+		WP_Mock::userFunction( 'sanitize_text_field' )->andReturn( '' );
+
+		$shortcode = Mockery::mock( LeaderboardShortcode::class );
+		$widget    = new LeaderboardWidget( $shortcode );
+
+		$result = $widget->update(
+			array( 'title' => '', 'period' => 'week', 'week_start' => 'monday', 'number' => '5', 'orderby' => 'earnings', 'status' => 'paid', 'refresh_interval' => '-10' ),
+			array()
+		);
+
+		$this->assertSame( 0, $result['refresh_interval'] );
+	}
+
+	/** @test */
+	public function update_defaults_refresh_interval_to_zero_when_not_submitted(): void {
+		WP_Mock::userFunction( 'sanitize_text_field' )->andReturn( '' );
+
+		$shortcode = Mockery::mock( LeaderboardShortcode::class );
+		$widget    = new LeaderboardWidget( $shortcode );
+
+		$result = $widget->update(
+			array( 'title' => '', 'period' => 'week', 'week_start' => 'monday', 'number' => '5', 'orderby' => 'earnings', 'status' => 'paid' ),
+			array()
+		);
+
+		$this->assertSame( 0, $result['refresh_interval'] );
+	}
+
+	/** @test */
+	public function widget_passes_refresh_interval_to_shortcode(): void {
+		WP_Mock::userFunction( 'apply_filters' )->andReturn( '' );
+
+		$shortcode = Mockery::mock( LeaderboardShortcode::class );
+		$shortcode->shouldReceive( 'render' )
+			->once()
+			->with(
+				Mockery::on(
+					function ( array $atts ): bool {
+						return isset( $atts['refresh_interval'] ) && '60' === $atts['refresh_interval'];
+					}
+				)
+			)
+			->andReturn( '' );
+
+		$widget = new LeaderboardWidget( $shortcode );
+
+		ob_start();
+		$widget->widget(
+			array( 'before_widget' => '', 'after_widget' => '', 'before_title' => '', 'after_title' => '', 'id' => 'w' ),
+			array( 'refresh_interval' => 60 )
+		);
+		ob_end_clean();
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/** @test */
+	public function widget_defaults_refresh_interval_to_zero_when_not_in_instance(): void {
+		WP_Mock::userFunction( 'apply_filters' )->andReturn( '' );
+
+		$shortcode = Mockery::mock( LeaderboardShortcode::class );
+		$shortcode->shouldReceive( 'render' )
+			->once()
+			->with(
+				Mockery::on(
+					function ( array $atts ): bool {
+						return isset( $atts['refresh_interval'] ) && '0' === $atts['refresh_interval'];
+					}
+				)
+			)
+			->andReturn( '' );
+
+		$widget = new LeaderboardWidget( $shortcode );
+
+		ob_start();
+		$widget->widget(
+			array( 'before_widget' => '', 'after_widget' => '', 'before_title' => '', 'after_title' => '', 'id' => 'w' ),
+			array() // no refresh_interval key
+		);
+		ob_end_clean();
+
+		$this->addToAssertionCount( 1 );
+	}
 }
