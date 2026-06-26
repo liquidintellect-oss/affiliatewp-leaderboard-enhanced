@@ -22,6 +22,9 @@ class StubReferralRepository implements ReferralRepositoryInterface {
 	/** @var array<int,string> */
 	private array $names = array();
 
+	/** @var list<int> */
+	private array $resolvedIds = array();
+
 	/** @param list<object> $rows */
 	public function setEarningsRows( array $rows ): void {
 		$this->earningsRows = $rows;
@@ -37,6 +40,11 @@ class StubReferralRepository implements ReferralRepositoryInterface {
 		$this->names = $names;
 	}
 
+	/** @param list<int> $ids */
+	public function setResolvedIds( array $ids ): void {
+		$this->resolvedIds = $ids;
+	}
+
 	public function getEarningsSummedByAffiliate( DatePeriod $range, array $statuses ): array {
 		return $this->earningsRows;
 	}
@@ -47,6 +55,10 @@ class StubReferralRepository implements ReferralRepositoryInterface {
 
 	public function getAffiliateName( int $affiliate_id ): string {
 		return $this->names[ $affiliate_id ] ?? "Affiliate #{$affiliate_id}";
+	}
+
+	public function resolveAffiliateIdsFromUsernamesOrEmails( array $identifiers ): array {
+		return $this->resolvedIds;
 	}
 }
 
@@ -290,6 +302,38 @@ class WeeklyLeaderboardTest extends TestCase {
 		$result = $this->leaderboard->build( $this->range, array( 'paid' ), 10, 'earnings', 'DESC' );
 
 		$this->assertSame( 0, $result[0]->referral_count );
+	}
+
+	// ── exclude filter ───────────────────────────────────────────────────────
+
+	/** @test */
+	public function build_with_empty_exclude_identifiers_returns_all_affiliates(): void {
+		$this->seedTwoAffiliates( earnings_a: 100.0, earnings_b: 200.0 );
+
+		$result = $this->leaderboard->build( $this->range, array( 'paid' ), 10, 'earnings', 'DESC', array() );
+
+		$this->assertCount( 2, $result );
+	}
+
+	/** @test */
+	public function build_with_exclude_identifiers_removes_matching_affiliate(): void {
+		$this->seedTwoAffiliates( earnings_a: 100.0, earnings_b: 200.0 );
+		$this->repo->setResolvedIds( array( 1 ) ); // exclude affiliate #1
+
+		$result = $this->leaderboard->build( $this->range, array( 'paid' ), 10, 'earnings', 'DESC', array( 'alice' ) );
+
+		$this->assertCount( 1, $result );
+		$this->assertSame( 2, $result[0]->affiliate_id );
+	}
+
+	/** @test */
+	public function build_with_exclude_identifiers_removes_all_excluded_affiliates(): void {
+		$this->seedTwoAffiliates( earnings_a: 100.0, earnings_b: 200.0 );
+		$this->repo->setResolvedIds( array( 1, 2 ) ); // exclude both
+
+		$result = $this->leaderboard->build( $this->range, array( 'paid' ), 10, 'earnings', 'DESC', array( 'alice', 'bob@example.com' ) );
+
+		$this->assertSame( array(), $result );
 	}
 
 	// ── helpers ───────────────────────────────────────────────────────────────

@@ -69,6 +69,7 @@ class LeaderboardWidget extends \WP_Widget {
 				'show_label'       => $instance['show_label'] ?? 'yes',
 				'anonymize'        => $instance['anonymize'] ?? 'no',
 				'refresh_interval' => (string) ( $instance['refresh_interval'] ?? '0' ),
+				'exclude'          => $instance['exclude'] ?? '',
 			)
 		);
 		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -95,6 +96,7 @@ class LeaderboardWidget extends \WP_Widget {
 			'show_label'       => 'yes',
 			'anonymize'        => 'no',
 			'refresh_interval' => '0',
+			'exclude'          => '',
 		);
 
 		$instance = wp_parse_args( (array) $instance, $defaults );
@@ -277,6 +279,19 @@ class LeaderboardWidget extends \WP_Widget {
 			<small><?php esc_html_e( 'Set to 0 to disable automatic refresh.', 'affiliatewp-leaderboard-enhanced' ); ?></small>
 		</p>
 
+		<!-- Exclude Affiliates -->
+		<p>
+			<label for="<?php echo esc_attr( $this->get_field_id( 'exclude' ) ); ?>">
+				<?php esc_html_e( 'Exclude Affiliates:', 'affiliatewp-leaderboard-enhanced' ); ?>
+			</label>
+			<input class="widefat"
+				id="<?php echo esc_attr( $this->get_field_id( 'exclude' ) ); ?>"
+				name="<?php echo esc_attr( $this->get_field_name( 'exclude' ) ); ?>"
+				type="text"
+				value="<?php echo esc_attr( $instance['exclude'] ); ?>" />
+			<small><?php esc_html_e( 'Comma-separated usernames or email addresses.', 'affiliatewp-leaderboard-enhanced' ); ?></small>
+		</p>
+
 		<?php
 		return '';
 	}
@@ -314,6 +329,7 @@ class LeaderboardWidget extends \WP_Widget {
 			'show_label'       => isset( $new_instance['show_label'] ) ? 'yes' : 'no',
 			'anonymize'        => isset( $new_instance['anonymize'] ) ? 'yes' : 'no',
 			'refresh_interval' => max( 0, (int) ( $new_instance['refresh_interval'] ?? 0 ) ),
+			'exclude'          => sanitize_text_field( $new_instance['exclude'] ?? '' ),
 		);
 	}
 }

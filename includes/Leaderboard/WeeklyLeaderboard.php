@@ -36,16 +36,18 @@ class WeeklyLeaderboard {
 	 * Steps:
 	 *   1. Fetch per-affiliate earnings sums for the period.
 	 *   2. Fetch per-affiliate referral counts for the period.
-	 *   3. Fetch each affiliate's display name.
-	 *   4. Combine into LeaderboardEntry value objects.
-	 *   5. Sort by the requested metric and direction.
-	 *   6. Slice to the requested maximum count.
+	 *   3. Optionally exclude affiliates matching $exclude_identifiers.
+	 *   4. Fetch each affiliate's display name.
+	 *   5. Combine into LeaderboardEntry value objects.
+	 *   6. Sort by the requested metric and direction.
+	 *   7. Slice to the requested maximum count.
 	 *
-	 * @param DatePeriod        $range    The week to score.
-	 * @param array<int,string> $statuses Referral statuses to include (e.g. ['paid','unpaid']).
-	 * @param int               $number   Maximum entries to return.
-	 * @param string            $orderby  Sort key: 'earnings' or 'referrals'.
-	 * @param string            $order    Sort direction: 'DESC' or 'ASC'.
+	 * @param DatePeriod        $range               The week to score.
+	 * @param array<int,string> $statuses            Referral statuses to include (e.g. ['paid','unpaid']).
+	 * @param int               $number              Maximum entries to return.
+	 * @param string            $orderby             Sort key: 'earnings' or 'referrals'.
+	 * @param string            $order               Sort direction: 'DESC' or 'ASC'.
+	 * @param array<string>     $exclude_identifiers WP usernames or emails to exclude. Default [].
 	 * @return list<LeaderboardEntry>
 	 */
 	public function build(
@@ -53,7 +55,8 @@ class WeeklyLeaderboard {
 		array $statuses,
 		int $number,
 		string $orderby,
-		string $order
+		string $order,
+		array $exclude_identifiers = array()
 	): array {
 		$earnings_rows = $this->repository->getEarningsSummedByAffiliate( $range, $statuses );
 
@@ -62,7 +65,23 @@ class WeeklyLeaderboard {
 		}
 
 		$affiliate_ids = $this->repository->getAffiliateIdsForReferrals( $range, $statuses );
-		$counts        = array_count_values( $affiliate_ids );
+
+		if ( ! empty( $exclude_identifiers ) ) {
+			$excluded_ids  = $this->repository->resolveAffiliateIdsFromUsernamesOrEmails( $exclude_identifiers );
+			$earnings_rows = array_values(
+				array_filter(
+					$earnings_rows,
+					static fn( $row ) => ! in_array( (int) $row->affiliate_id, $excluded_ids, true )
+				)
+			);
+			$affiliate_ids = array_values(
+				array_filter(
+					$affiliate_ids,
+					static fn( $id ) => ! in_array( $id, $excluded_ids, true )
+				)
+			);
+		}
+		$counts = array_count_values( $affiliate_ids );
 
 		$entries = array();
 		foreach ( $earnings_rows as $row ) {

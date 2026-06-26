@@ -53,4 +53,16 @@ interface ReferralRepositoryInterface {
 	 * @return string
 	 */
 	public function getAffiliateName( int $affiliate_id ): string;
+
+	/**
+	 * Resolve a list of WP usernames and/or email addresses to affiliate IDs.
+	 *
+	 * Identifiers that cannot be matched to a WP user or an AffiliateWP affiliate
+	 * are silently dropped.  Duplicate identifiers that resolve to the same
+	 * affiliate are deduplicated in the returned list.
+	 *
+	 * @param array<string> $identifiers WP usernames or email addresses.
+	 * @return list<int> Resolved affiliate IDs (deduplicated).
+	 */
+	public function resolveAffiliateIdsFromUsernamesOrEmails( array $identifiers ): array;
 }

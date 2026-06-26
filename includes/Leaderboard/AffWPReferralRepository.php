@@ -134,6 +134,44 @@ class AffWPReferralRepository implements ReferralRepositoryInterface {
 	}
 
 	/**
+	 * Resolve a list of WP usernames and/or email addresses to affiliate IDs.
+	 *
+	 * For each identifier, looks up the matching WP user (by email when the
+	 * string contains `@`, by login otherwise) and then fetches the corresponding
+	 * AffiliateWP affiliate record.  Identifiers that cannot be resolved are
+	 * silently dropped.
+	 *
+	 * @param array<string> $identifiers WP usernames or email addresses.
+	 * @return list<int> Resolved affiliate IDs (deduplicated).
+	 */
+	public function resolveAffiliateIdsFromUsernamesOrEmails( array $identifiers ): array {
+		$ids = array();
+
+		foreach ( $identifiers as $identifier ) {
+			$identifier = trim( (string) $identifier );
+
+			if ( '' === $identifier ) {
+				continue;
+			}
+
+			$field = false !== strpos( $identifier, '@' ) ? 'email' : 'login';
+			$user  = get_user_by( $field, $identifier );
+
+			if ( ! $user instanceof \WP_User ) {
+				continue;
+			}
+
+			$affiliate = affiliate_wp()->affiliates->get_by( 'user_id', $user->ID );
+
+			if ( $affiliate && isset( $affiliate->affiliate_id ) ) {
+				$ids[] = (int) $affiliate->affiliate_id;
+			}
+		}
+
+		return array_values( array_unique( $ids ) );
+	}
+
+	/**
 	 * Strip the `@domain` portion from a string if it contains an `@` sign.
 	 *
 	 * Returns the value unchanged when no `@` is present (i.e. a plain username).
