@@ -420,6 +420,111 @@ class LeaderboardWidgetTest extends TestCase {
 		$this->addToAssertionCount( 1 );
 	}
 
+	// ── exclude ───────────────────────────────────────────────────────────────
+
+	/** @test */
+	public function update_saves_exclude_field(): void {
+		WP_Mock::userFunction( 'sanitize_text_field' )
+			->andReturnArg( 0 );
+
+		$shortcode = Mockery::mock( LeaderboardShortcode::class );
+		$widget    = new LeaderboardWidget( $shortcode );
+
+		$result = $widget->update(
+			array(
+				'title'      => '',
+				'period'     => 'week',
+				'week_start' => 'monday',
+				'number'     => '5',
+				'orderby'    => 'earnings',
+				'status'     => 'paid,unpaid',
+				'exclude'    => 'alice,bob@example.com',
+			),
+			array()
+		);
+
+		$this->assertSame( 'alice,bob@example.com', $result['exclude'] );
+	}
+
+	/** @test */
+	public function update_defaults_exclude_to_empty_string_when_not_submitted(): void {
+		WP_Mock::userFunction( 'sanitize_text_field' )
+			->andReturnArg( 0 );
+
+		$shortcode = Mockery::mock( LeaderboardShortcode::class );
+		$widget    = new LeaderboardWidget( $shortcode );
+
+		$result = $widget->update(
+			array(
+				'title'      => '',
+				'period'     => 'week',
+				'week_start' => 'monday',
+				'number'     => '5',
+				'orderby'    => 'earnings',
+				'status'     => 'paid,unpaid',
+			),
+			array()
+		);
+
+		$this->assertSame( '', $result['exclude'] );
+	}
+
+	/** @test */
+	public function widget_passes_exclude_setting_to_shortcode(): void {
+		WP_Mock::userFunction( 'apply_filters' )->andReturn( '' );
+
+		$shortcode = Mockery::mock( LeaderboardShortcode::class );
+		$shortcode->shouldReceive( 'render' )
+			->once()
+			->with(
+				Mockery::on(
+					function ( array $atts ): bool {
+						return isset( $atts['exclude'] ) && 'alice' === $atts['exclude'];
+					}
+				)
+			)
+			->andReturn( '' );
+
+		$widget = new LeaderboardWidget( $shortcode );
+
+		ob_start();
+		$widget->widget(
+			array( 'before_widget' => '', 'after_widget' => '', 'before_title' => '', 'after_title' => '', 'id' => 'w' ),
+			array( 'exclude' => 'alice' )
+		);
+		ob_end_clean();
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/** @test */
+	public function widget_defaults_exclude_to_empty_string_when_not_in_instance(): void {
+		WP_Mock::userFunction( 'apply_filters' )->andReturn( '' );
+
+		$shortcode = Mockery::mock( LeaderboardShortcode::class );
+		$shortcode->shouldReceive( 'render' )
+			->once()
+			->with(
+				Mockery::on(
+					function ( array $atts ): bool {
+						return isset( $atts['exclude'] ) && '' === $atts['exclude'];
+					}
+				)
+			)
+			->andReturn( '' );
+
+		$widget = new LeaderboardWidget( $shortcode );
+
+		ob_start();
+		$widget->widget(
+			array( 'before_widget' => '', 'after_widget' => '', 'before_title' => '', 'after_title' => '', 'id' => 'w' ),
+			array()
+		);
+		ob_end_clean();
+
+		$this->addToAssertionCount( 1 );
+	}
+
 	/** @test */
 	public function widget_defaults_refresh_interval_to_zero_when_not_in_instance(): void {
 		WP_Mock::userFunction( 'apply_filters' )->andReturn( '' );

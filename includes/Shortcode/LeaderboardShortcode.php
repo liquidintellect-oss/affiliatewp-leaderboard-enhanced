@@ -37,6 +37,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * anonymize        string  Abbreviate affiliate last names: 'no' (default) or 'yes'.
  *                          e.g. "John Doe" becomes "John D.". Single-word names are unchanged.
  * refresh_interval int     Seconds between background AJAX refreshes. Default 0 (disabled).
+ * exclude          string  Comma-separated WP usernames or email addresses to hide from the
+ *                          leaderboard. Default '' (no exclusions).
  *
  * The rendered HTML applies position-specific CSS classes to the top 3 list items:
  *   .affwp-leaderboard-position-1  (1st place / gold)
@@ -92,6 +94,7 @@ class LeaderboardShortcode {
 				'show_label'       => 'yes',
 				'anonymize'        => 'no',
 				'refresh_interval' => '0',
+				'exclude'          => '',
 			),
 			$atts,
 			'affiliate_leaderboard_enhanced'
@@ -111,6 +114,7 @@ class LeaderboardShortcode {
 			'status'     => $atts['status'],
 			'show_label' => $atts['show_label'],
 			'anonymize'  => $atts['anonymize'],
+			'exclude'    => $atts['exclude'],
 		);
 
 		$refresh_interval = max( 0, (int) $atts['refresh_interval'] );
@@ -146,6 +150,7 @@ class LeaderboardShortcode {
 				'status'     => 'paid,unpaid',
 				'show_label' => 'yes',
 				'anonymize'  => 'no',
+				'exclude'    => '',
 			),
 			$params,
 			'affiliate_leaderboard_enhanced'
@@ -173,7 +178,11 @@ class LeaderboardShortcode {
 		$show_label     = ! in_array( strtolower( trim( (string) $atts['show_label'] ) ), self::NO_VALUES, true );
 		$anonymize      = ! in_array( strtolower( trim( (string) $atts['anonymize'] ) ), self::NO_VALUES, true );
 
-		$entries = $this->leaderboard->build( $range, $statuses, $number, $orderby, $order );
+		$exclude_identifiers = array_values(
+			array_filter( array_map( 'trim', explode( ',', (string) $atts['exclude'] ) ) )
+		);
+
+		$entries = $this->leaderboard->build( $range, $statuses, $number, $orderby, $order, $exclude_identifiers );
 
 		return $this->buildInnerHtml( $entries, $range, $show_earnings, $show_referrals, $show_label, $anonymize );
 	}

@@ -424,6 +424,64 @@ class LeaderboardShortcodeTest extends TestCase {
 		$this->assertStringContainsString( '<ol', $html );
 	}
 
+	// ── exclude attribute ─────────────────────────────────────────────────────
+
+	/** @test */
+	public function render_includes_exclude_param_in_data_attribute(): void {
+		$this->setupRenderWrapperMocks( array( 'exclude' => 'alice,bob@example.com' ) );
+
+		$shortcode = new LeaderboardShortcode( $this->mockLeaderboard( array() ) );
+		$html      = $shortcode->render( array() );
+
+		$this->assertStringContainsString( 'exclude', $html );
+	}
+
+	/** @test */
+	public function render_content_with_exclude_passes_parsed_identifiers_to_build(): void {
+		$this->setupRenderContentMocks( array( 'exclude' => 'alice, bob@example.com' ) );
+
+		$mock = Mockery::mock( WeeklyLeaderboard::class );
+		$mock->shouldReceive( 'build' )
+			->once()
+			->with(
+				Mockery::any(),
+				Mockery::any(),
+				Mockery::any(),
+				Mockery::any(),
+				Mockery::any(),
+				array( 'alice', 'bob@example.com' )
+			)
+			->andReturn( array() );
+
+		$shortcode = new LeaderboardShortcode( $mock );
+		$shortcode->renderContent( array() );
+
+		$this->addToAssertionCount( 1 );
+	}
+
+	/** @test */
+	public function render_content_with_empty_exclude_passes_empty_array_to_build(): void {
+		$this->setupRenderContentMocks( array( 'exclude' => '' ) );
+
+		$mock = Mockery::mock( WeeklyLeaderboard::class );
+		$mock->shouldReceive( 'build' )
+			->once()
+			->with(
+				Mockery::any(),
+				Mockery::any(),
+				Mockery::any(),
+				Mockery::any(),
+				Mockery::any(),
+				array()
+			)
+			->andReturn( array() );
+
+		$shortcode = new LeaderboardShortcode( $mock );
+		$shortcode->renderContent( array() );
+
+		$this->addToAssertionCount( 1 );
+	}
+
 	// ── helpers ───────────────────────────────────────────────────────────────
 
 	/**
@@ -445,6 +503,7 @@ class LeaderboardShortcodeTest extends TestCase {
 			'show_label'       => 'yes',
 			'anonymize'        => 'no',
 			'refresh_interval' => '0',
+			'exclude'          => '',
 		);
 
 		WP_Mock::userFunction( 'shortcode_atts' )
@@ -475,6 +534,7 @@ class LeaderboardShortcodeTest extends TestCase {
 			'status'     => 'paid,unpaid',
 			'show_label' => 'no',
 			'anonymize'  => 'no',
+			'exclude'    => '',
 		);
 
 		WP_Mock::userFunction( 'shortcode_atts' )
