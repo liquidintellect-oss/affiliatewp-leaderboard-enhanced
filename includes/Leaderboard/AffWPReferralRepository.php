@@ -79,8 +79,10 @@ class AffWPReferralRepository implements ReferralRepositoryInterface {
 	/**
 	 * Return the display name for the given affiliate.
 	 *
-	 * Falls back to the WordPress username and then to the email local-part
-	 * (everything before the `@`) when the affiliate has no first or last name.
+	 * Any name that looks like an email address (contains `@`) has its domain
+	 * segment stripped so only the local-part is shown (e.g. `jane@example.com`
+	 * becomes `jane`).  Falls back to the WordPress username and then to the
+	 * email local-part when the affiliate has no first or last name.
 	 *
 	 * @param int $affiliate_id AffiliateWP affiliate ID.
 	 * @return string
@@ -89,7 +91,7 @@ class AffWPReferralRepository implements ReferralRepositoryInterface {
 		$name = (string) affiliate_wp()->affiliates->get_affiliate_name( $affiliate_id );
 
 		if ( '' !== $name ) {
-			return $name;
+			return self::stripEmailDomain( $name );
 		}
 
 		$affiliate = affwp_get_affiliate( $affiliate_id );
@@ -102,7 +104,7 @@ class AffWPReferralRepository implements ReferralRepositoryInterface {
 	 * Resolve the best available display name given the raw name and WP user.
 	 *
 	 * Priority:
-	 *   1. $name, if non-empty (already handled by the caller, but kept for completeness).
+	 *   1. $name, if non-empty — with any `@domain` suffix stripped.
 	 *   2. WP user_login, with any `@domain` suffix stripped.
 	 *   3. WP user_email, with the `@domain` suffix stripped.
 	 *   4. Empty string as a last resort.
@@ -119,7 +121,7 @@ class AffWPReferralRepository implements ReferralRepositoryInterface {
 	 */
 	public static function resolveAffiliateName( string $name, ?\WP_User $user ): string {
 		if ( '' !== $name ) {
-			return $name;
+			return self::stripEmailDomain( $name );
 		}
 
 		if ( null !== $user && '' !== $user->user_login ) {
