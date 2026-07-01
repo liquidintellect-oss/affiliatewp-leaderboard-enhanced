@@ -47,6 +47,15 @@ class AffWPReferralRepositoryTest extends TestCase {
 	}
 
 	/** @test */
+	public function strips_domain_from_name_when_name_is_an_email_address(): void {
+		$user = new WP_User( 'jsmith@example.com', 'jsmith@example.com' );
+
+		$result = AffWPReferralRepository::resolveAffiliateName( 'jsmith@example.com', $user );
+
+		$this->assertSame( 'jsmith', $result );
+	}
+
+	/** @test */
 	public function falls_back_to_username_when_name_is_empty(): void {
 		$user = new WP_User( 'jsmith', 'jsmith@example.com' );
 
